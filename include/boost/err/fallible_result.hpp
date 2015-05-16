@@ -18,7 +18,7 @@
 #define fallible_result_hpp__568DC1C1_A422_4EE6_9993_8FC98EE846C8
 #pragma once
 //------------------------------------------------------------------------------
-#include "fallible_result.hpp"
+#include "result_or_error.hpp"
 
 #include "boost/config.hpp"
 
