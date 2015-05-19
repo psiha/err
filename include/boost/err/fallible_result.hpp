@@ -32,16 +32,29 @@ namespace err
 {
 //------------------------------------------------------------------------------
 
+
+////////////////////////////////////////////////////////////////////////////////
+///
+/// \class fallible_result
+///
+/// \brief A result_or_error wrapper that can either:
+/// - trivially move-convert/'decay' to result_or_error (error handling mode)
+/// - try-convert to Result for a successful call or throw the Error object
+///   otherwise (exception handling mode).
+///
+////////////////////////////////////////////////////////////////////////////////
+
 template <class Result, class Error>
 class fallible_result
 {
 public:
 	template <typename T>
-	fallible_result( T && argument ) : result_or_error_( std::forward<T>( argument ) ) noexcept( std::is_nothrow_move_constructible<Result>::value ) {}
+	fallible_result( T && argument ) noexcept( std::is_nothrow_move_constructible<Result>::value ) : result_or_error_( std::forward<T>( argument ) ) {}
 
 	~fallible_result() noexcept( false )
 	{
 		result_or_error_.throw_if_uninspected_error();
+		BOOST_ASSUME( result_or_error_.inspected_ );
 	};
 
 	operator result_or_error<Result, Error> && () && noexcept { return std::move( result_or_error_ ); }
@@ -56,6 +69,8 @@ private:
 	Result && result()
 	{
 		result_or_error_.throw_if_error();
+		BOOST_ASSUME( result_or_error_.inspected_ );
+		BOOST_ASSUME( result_or_error_.succeeded_ );
 		return static_cast<Result &&>( result_or_error_.result_ );
 	}
 
