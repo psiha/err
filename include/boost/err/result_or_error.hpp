@@ -61,7 +61,7 @@ class result_or_error
 public:
 	/// \note Be liberal with the constructor argument type in order to allow
 	/// emplacement/eliminate an intermediate move constructor call (as it can
-	/// actually be nontriviall, e.g. MSVC14 RC std::string).
+	/// actually be nontriviall, e.g. with MSVC14 RC std::string).
 	///                                       (18.05.2015.) (Domagoj Saric)
 	template <typename Source> result_or_error( Source && BOOST_RESTRICTED_REF result, typename std::enable_if<std::is_constructible<Result, Source &&>::value>::type const * = nullptr ) noexcept( std::is_nothrow_move_constructible<Result>::value ) : succeeded_( true  ), inspected_( false ), result_( std::forward<Source>( result ) ) {}
 	template <typename Source> result_or_error( Source && BOOST_RESTRICTED_REF error , typename std::enable_if<std::is_constructible<Error , Source &&>::value>::type const * = nullptr ) noexcept( std::is_nothrow_move_constructible<Error >::value ) : succeeded_( false ), inspected_( false ), error_ ( std::forward<Source>( error  ) ) {}
