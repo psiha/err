@@ -109,7 +109,6 @@ using compressed_result_error_variant =
 template <class Result, class Error>
 class fallible_result;
 
-
 template <class Result, class Error, typename = void>
 class result_or_error
 {
@@ -146,18 +145,6 @@ public:
 		}
 		BOOST_ASSUME( other.inspected_ );
 	}
-
-    result_or_error( fallible_result<Result, Error> && BOOST_RESTRICTED_REF result )
-        noexcept
-		(
-			std::is_nothrow_move_constructible<Result>::value &&
-			std::is_nothrow_move_constructible<Error >::value
-		)
-        : result_or_error( std::move( std::move( result ).operator result_or_error<Result, Error> &&() ) )
-	{
-        BOOST_ASSUME( this->                  inspected_ == false );
-        BOOST_ASSUME( result.result_or_error_.inspected_ == true  );
-    }
 
     result_or_error( result_or_error const & ) = delete;
 
@@ -268,14 +255,6 @@ public:
 		other.inspected_ = true;
 	}
 
-    result_or_error( fallible_result<Result, Error> && BOOST_RESTRICTED_REF result ) noexcept( std::is_nothrow_move_constructible<Result>::value )
-        :
-        result_or_error( std::move( std::move( result ).operator result_or_error<Result, Error> &&() ) )
-	{
-        BOOST_ASSUME( this->                  inspected_ == false );
-        BOOST_ASSUME( result.result_or_error_.inspected_ == true  );
-    }
-
     result_or_error( result_or_error const & ) = delete;
 
 #if 0 // disabled
@@ -354,7 +333,9 @@ class result_or_error<void, Error, void>
 {
 public:
 	template <typename Source>
-    result_or_error( Source && BOOST_RESTRICTED_REF error ) noexcept( std::is_nothrow_constructible<Error, Source &&>::value ) : succeeded_( false ), inspected_( false ), error_( std::forward<Source>( error ) ) {}
+    result_or_error( Source && BOOST_RESTRICTED_REF error, typename std::enable_if<!std::is_same<Source, fallible_result<void, Error>>::value>::type const * = nullptr )
+        noexcept( std::is_nothrow_constructible<Error, Source &&>::value )
+        : succeeded_( false ), inspected_( false ), error_( std::forward<Source>( error ) ) {}
 
     result_or_error( no_err_t ) noexcept : succeeded_( true ), inspected_( false ) {}
 
@@ -368,14 +349,6 @@ public:
 			BOOST_ASSUME( !other.succeeded_ );
 		}
 	}
-
-    result_or_error( fallible_result<void, Error> && BOOST_RESTRICTED_REF result ) noexcept( std::is_nothrow_move_constructible<Error>::value )
-        :
-        result_or_error( std::move( std::move( result ).operator result_or_error<void, Error> &&() ) )
-	{
-        BOOST_ASSUME( this->                inspected_ == false );
-        BOOST_ASSUME( result.void_or_error_.inspected_ == true  );
-    }
 
     result_or_error( result_or_error const & ) = delete;
 
