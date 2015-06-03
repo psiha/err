@@ -38,7 +38,7 @@ struct last_errno
 
     static value_type const no_error = 0;
 
-    BOOST_ATTRIBUTES( BOOST_COLD, BOOST_RESTRICTED_FUNCTION_L2, BOOST_EXCEPTIONLESS )
+    BOOST_ATTRIBUTES( BOOST_COLD, BOOST_RESTRICTED_FUNCTION_L2, BOOST_EXCEPTIONLESS, BOOST_WARN_UNUSED_RESULT )
     static value_type BOOST_CC_REG get() { return /*std::*/errno; }
     BOOST_ATTRIBUTES( BOOST_COLD, BOOST_EXCEPTIONLESS )
     static void       BOOST_CC_REG set( value_type const value ) { errno = value; }
