@@ -20,8 +20,8 @@
 //------------------------------------------------------------------------------
 #include "result_or_error.hpp"
 
-#include "boost/assert.hpp"
-#include "boost/config.hpp"
+#include <boost/assert.hpp>
+#include <boost/config.hpp>
 
 #include <cstdint>
 #include <new>
@@ -55,8 +55,7 @@ namespace detail
     // https://devforums.apple.com/message/1101679#1101679
     // http://comments.gmane.org/gmane.editors.textmate.general/38535
     // https://github.com/textmate/textmate/commit/172ce9d4282e408fe60b699c432390b9f6e3f74a
-    BOOST_OVERRIDABLE_SYMBOL BOOST_THREAD_LOCAL_POD
-    std::uint8_t fallible_result_counter( 0 );
+    BOOST_THREAD_LOCAL_POD std::uint8_t fallible_result_counter( 0 ) /*BOOST_OVERRIDABLE_SYMBOL*/; // GCC 4.9 from Android NDK 10e ICEs if BOOST_OVERRIDABLE_SYMBOL is put 'in the front' and Clang does not like at the end...
 } // namespace detail
 #endif // NDEBUG
 
@@ -64,6 +63,7 @@ template <class Result, class Error>
 class fallible_result
 {
 public:
+    // todo: variadic arguments
 	template <typename T>
 	fallible_result( T && BOOST_RESTRICTED_REF argument ) noexcept( std::is_nothrow_constructible<result_or_error<Result, Error>, T &&>::value )
         : result_or_error_( std::forward<T>( argument ) )
@@ -89,7 +89,6 @@ public:
 
     fallible_result( fallible_result const & ) = delete;
 
-    BOOST_OPTIMIZE_FOR_SIZE_BEGIN()
 	~fallible_result() noexcept( false )
 	{
         BOOST_ASSERT_MSG
@@ -100,15 +99,16 @@ public:
 		result_or_error_.throw_if_uninspected_error();
 		BOOST_ASSUME( result_or_error_.inspected_ );
 	};
-    BOOST_OPTIMIZE_FOR_SIZE_END()
 
-	operator result_or_error<Result, Error> && () && noexcept( true  ) { static_cast<fallible_result &&>( *this ).ignore_failure(); return std::move( result_or_error_ ); }
-	operator Result                         && () && noexcept( false ) {                                                            return std::move( result()         ); }
+    result_or_error<Result, Error> && as_result_or_error() && noexcept( true ) { std::move( *this ).ignore_failure(); return std::move( result_or_error_ ); }
 
-	                                                     Result & operator *  () && { return  result(); }
-	BOOST_ATTRIBUTES( BOOST_RESTRICTED_FUNCTION_RETURN ) Result * operator -> () && { return &result(); }
+	operator result_or_error<Result, Error> && () && noexcept( true  ) { return std::move( *this ).as_result_or_error(); }
+	operator Result                         && () && noexcept( false ) { return std::move( result() ); }
 
-    explicit operator bool() && noexcept { return result_or_error_; }
+	                                                     Result && operator *  () && { return  result(); }
+	BOOST_ATTRIBUTES( BOOST_RESTRICTED_FUNCTION_RETURN ) Result *  operator -> () && { return &result(); }
+
+    explicit operator bool() && noexcept { return static_cast<bool>( result_or_error_ ); }
 
     void ignore_failure() && noexcept { result_or_error_.inspected_ = true; }
 
@@ -196,7 +196,7 @@ public:
 
     explicit operator bool() && noexcept { return std::move( *this ).succeeded(); }
 
-    void ignore_failure() && noexcept { void_or_error_.inspected_ = true; }
+    void ignore_failure() && noexcept { static_cast<fallible_result &&>( *this ).succeeded(); }
 
 private:
     void * operator new     (         std::size_t                         ) = delete;
