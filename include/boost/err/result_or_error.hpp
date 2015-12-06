@@ -118,115 +118,115 @@ template <class Result, class Error, typename = void>
 class result_or_error
 {
 public:
-	/// \note Be liberal with the constructor argument type in order to allow
-	/// emplacement/eliminate an intermediate move constructor call (as it can
-	/// actually be nontrivial, e.g. with MSVC14 RC std::string).
-	///                                       (18.05.2015.) (Domagoj Saric)
-	template <typename Source> result_or_error( Source && BOOST_RESTRICTED_REF result, typename std::enable_if<std::is_constructible<Result, Source &&>::value>::type const * = nullptr ) noexcept( std::is_nothrow_constructible<Result, Source &&>::value ) : succeeded_( true  ), inspected_( false ), result_( std::forward<Source>( result ) ) {}
-	template <typename Source> result_or_error( Source && BOOST_RESTRICTED_REF error , typename std::enable_if<std::is_constructible<Error , Source &&>::value>::type const * = nullptr ) noexcept( std::is_nothrow_constructible<Error , Source &&>::value ) : succeeded_( false ), inspected_( false ), error_ ( std::forward<Source>( error  ) ) {}
+    /// \note Be liberal with the constructor argument type in order to allow
+    /// emplacement/eliminate an intermediate move constructor call (as it can
+    /// actually be nontrivial, e.g. with MSVC14 RC std::string).
+    ///                                       (18.05.2015.) (Domagoj Saric)
+    template <typename Source> result_or_error( Source && BOOST_RESTRICTED_REF result, typename std::enable_if<std::is_constructible<Result, Source &&>::value>::type const * = nullptr ) noexcept( std::is_nothrow_constructible<Result, Source &&>::value ) : succeeded_( true  ), inspected_( false ), result_( std::forward<Source>( result ) ) {}
+    template <typename Source> result_or_error( Source && BOOST_RESTRICTED_REF error , typename std::enable_if<std::is_constructible<Error , Source &&>::value>::type const * = nullptr ) noexcept( std::is_nothrow_constructible<Error , Source &&>::value ) : succeeded_( false ), inspected_( false ), error_ ( std::forward<Source>( error  ) ) {}
 
-	result_or_error( result_or_error && BOOST_RESTRICTED_REF other )
-		noexcept
-		(
-			std::is_nothrow_move_constructible<Result>::value &&
-			std::is_nothrow_move_constructible<Error >::value
-		)
-		: succeeded_( other.succeeded() ), inspected_( false )
-	{
-		/// \note MSVC14 RC still cannot 'see through' placement new and inserts
-		/// braindead branching code so we help it with assume statements.
-		///                                   (18.05.2015.) (Domagoj Saric)
-		if ( BOOST_LIKELY( succeeded_ ) )
-		{
-			auto const ptr( new ( &result_ ) Result( std::move( other.result_ ) ) );
-			BOOST_ASSUME( ptr );
-			BOOST_ASSUME( other.succeeded_ );
-		}
-		else
-		{
-			auto const ptr( new ( &error_  ) Error ( std::move( other.error_  ) ) );
-			BOOST_ASSUME( ptr );
-			BOOST_ASSUME( !other.succeeded_ );
-		}
-		BOOST_ASSUME( other.inspected_ );
-	}
+    result_or_error( result_or_error && BOOST_RESTRICTED_REF other )
+        noexcept
+        (
+            std::is_nothrow_move_constructible<Result>::value &&
+            std::is_nothrow_move_constructible<Error >::value
+        )
+        : succeeded_( other.succeeded() ), inspected_( false )
+    {
+        /// \note MSVC14 RC still cannot 'see through' placement new and inserts
+        /// braindead branching code so we help it with assume statements.
+        ///                                   (18.05.2015.) (Domagoj Saric)
+        if ( BOOST_LIKELY( succeeded_ ) )
+        {
+            auto const ptr( new ( &result_ ) Result( std::move( other.result_ ) ) );
+            BOOST_ASSUME( ptr );
+            BOOST_ASSUME( other.succeeded_ );
+        }
+        else
+        {
+            auto const ptr( new ( &error_  ) Error ( std::move( other.error_  ) ) );
+            BOOST_ASSUME( ptr );
+            BOOST_ASSUME( !other.succeeded_ );
+        }
+        BOOST_ASSUME( other.inspected_ );
+    }
 
     result_or_error( result_or_error const & ) = delete;
 
     BOOST_OPTIMIZE_FOR_SIZE_BEGIN()
     BOOST_ATTRIBUTES( BOOST_MINSIZE )
-	~result_or_error() noexcept( std::is_nothrow_destructible<Result>::value && std::is_nothrow_destructible<Error>::value )
-	{
-		//BOOST_ASSERT_MSG( inspected(), "Ignored error return code." );
-		if ( BOOST_LIKELY( succeeded_ ) )
+    ~result_or_error() noexcept( std::is_nothrow_destructible<Result>::value && std::is_nothrow_destructible<Error>::value )
+    {
+        //BOOST_ASSERT_MSG( inspected(), "Ignored error return code." );
+        if ( BOOST_LIKELY( succeeded_ ) )
             result_.~Result();
         else
             error_.~Error();
-	};
+    };
     BOOST_OPTIMIZE_FOR_SIZE_END()
 
-	Error  const & error ()       { BOOST_ASSERT_MSG( !succeeded_, "Querying the error of a succeeded operation." ); return error_ ; }
-	Result       & result()       { BOOST_ASSERT_MSG(  succeeded_, "Querying the result of a failed operation."   ); return result_; }
-	Result const & result() const { return const_cast<Result &>( *this ).result(); }
+    Error  const & error ()       { BOOST_ASSERT_MSG( !succeeded_, "Querying the error of a succeeded operation." ); return error_ ; }
+    Result       & result()       { BOOST_ASSERT_MSG(  succeeded_, "Querying the result of a failed operation."   ); return result_; }
+    Result const & result() const { return const_cast<Result &>( *this ).result(); }
 
                                                          Result       && operator *  ()       && { return  result(); }
                                                          Result       &  operator *  ()       &  { return  result(); }
                                                          Result const &  operator *  () const &  { return  result(); }
-	BOOST_ATTRIBUTES( BOOST_RESTRICTED_FUNCTION_RETURN ) Result       *  operator -> ()          { return &result(); }
+    BOOST_ATTRIBUTES( BOOST_RESTRICTED_FUNCTION_RETURN ) Result       *  operator -> ()          { return &result(); }
     BOOST_ATTRIBUTES( BOOST_RESTRICTED_FUNCTION_RETURN ) Result const *  operator -> () const    { return &result(); }
 
-					  bool inspected() const noexcept {                    return BOOST_LIKELY( inspected_ ); }
-		              bool succeeded() const noexcept { inspected_ = true; return BOOST_LIKELY( succeeded_ ); }
-	explicit operator bool          () const noexcept {                    return succeeded()               ; }
+                      bool inspected() const noexcept {                    return BOOST_LIKELY( inspected_ ); }
+                      bool succeeded() const noexcept { inspected_ = true; return BOOST_LIKELY( succeeded_ ); }
+    explicit operator bool          () const noexcept {                    return succeeded()               ; }
 
     BOOST_OPTIMIZE_FOR_SIZE_BEGIN()
 #ifndef BOOST_NO_EXCEPTIONS
     BOOST_ATTRIBUTES( BOOST_MINSIZE )
-	void BOOST_CC_REG throw_if_error()
-	{
-		BOOST_ASSERT( !std::uncaught_exception() );
-		if ( succeeded() )
-		{
-			BOOST_ASSUME( inspected_ );
-			BOOST_ASSUME( succeeded_ );
-			return;
-		}
-		BOOST_ASSUME( inspected_ );
-		throw_error();
-	}
+    void BOOST_CC_REG throw_if_error()
+    {
+        BOOST_ASSERT( !std::uncaught_exception() );
+        if ( succeeded() )
+        {
+            BOOST_ASSUME( inspected_ );
+            BOOST_ASSUME( succeeded_ );
+            return;
+        }
+        BOOST_ASSUME( inspected_ );
+        throw_error();
+    }
     BOOST_ATTRIBUTES( BOOST_MINSIZE )
-	void BOOST_CC_REG throw_if_uninspected_error()
-	{
-		if ( !inspected() )
-		{
-			throw_if_error();
-			BOOST_ASSUME( succeeded_ );
-		}
-		BOOST_ASSUME( inspected_ );
-	}
+    void BOOST_CC_REG throw_if_uninspected_error()
+    {
+        if ( !inspected() )
+        {
+            throw_if_error();
+            BOOST_ASSUME( succeeded_ );
+        }
+        BOOST_ASSUME( inspected_ );
+    }
 
-	BOOST_ATTRIBUTES( BOOST_DOES_NOT_RETURN, BOOST_COLD )
-	void BOOST_CC_REG throw_error() noexcept( false )
-	{
-		BOOST_ASSERT( !succeeded() );
-		BOOST_ASSERT( !std::uncaught_exception() );
-		make_and_throw_exception( std::move( error_ ) );
-	}
+    BOOST_ATTRIBUTES( BOOST_DOES_NOT_RETURN, BOOST_COLD )
+    void BOOST_CC_REG throw_error() noexcept( false )
+    {
+        BOOST_ASSERT( !succeeded() );
+        BOOST_ASSERT( !std::uncaught_exception() );
+        make_and_throw_exception( std::move( error_ ) );
+    }
 #endif // BOOST_NO_EXCEPTIONS
 
     BOOST_ATTRIBUTES( BOOST_COLD )
     std::exception_ptr BOOST_CC_REG make_exception_ptr()
-	{
+    {
         // http://en.cppreference.com/w/cpp/error/exception_ptr
-		BOOST_ASSERT( !succeeded() );
-		BOOST_ASSERT( !std::uncaught_exception() );
-		return make_exception_ptr( std::move( error_ ) );
-	}
+        BOOST_ASSERT( !succeeded() );
+        BOOST_ASSERT( !std::uncaught_exception() );
+        return make_exception_ptr( std::move( error_ ) );
+    }
     BOOST_OPTIMIZE_FOR_SIZE_END()
 
 protected:
-	        bool succeeded_;
-	mutable bool inspected_;
+            bool succeeded_;
+    mutable bool inspected_;
 
 private: friend class fallible_result<Result, Error>;
 #ifdef BOOST_MSVC
@@ -234,11 +234,11 @@ private: friend class fallible_result<Result, Error>;
     #pragma warning( disable : 4510 ) // Default constructor was implicitly defined as deleted.
     #pragma warning( disable : 4624 ) // Destructor was implicitly defined as deleted because a base class destructor is inaccessible or deleted.
 #endif // BOOST_MSVC
-	union
-	{
-		Result result_;
-		Error  error_ ;
-	};
+    union
+    {
+        Result result_;
+        Error  error_ ;
+    };
 #ifdef BOOST_MSVC
     #pragma warning( pop )
 #endif // BOOST_MSVC
@@ -257,81 +257,81 @@ template <class Result, class Error>
 class result_or_error<Result, Error, typename std::enable_if<compressed_result_error_variant<Result, Error>::value>::type>
 {
 public:
-	template <typename Source>
+    template <typename Source>
     result_or_error( Source && BOOST_RESTRICTED_REF result ) noexcept( std::is_nothrow_constructible<Result, Source &&>::value ) : result_( std::forward<Source>( result ) ), inspected_( false ) {}
 
-	result_or_error( result_or_error && BOOST_RESTRICTED_REF other ) noexcept( std::is_nothrow_move_constructible<Result>::value )
-		:
+    result_or_error( result_or_error && BOOST_RESTRICTED_REF other ) noexcept( std::is_nothrow_move_constructible<Result>::value )
+        :
         result_   ( std::move( other.result_ ) ),
         inspected_( false                      )
-	{
-		other.inspected_ = true;
-	}
+    {
+        other.inspected_ = true;
+    }
 
     result_or_error( result_or_error const & ) = delete;
 
 #if 0 // disabled
-	~result_or_error() noexcept { BOOST_ASSERT_MSG( inspected(), "Ignored error return code." ); };
+    ~result_or_error() noexcept { BOOST_ASSERT_MSG( inspected(), "Ignored error return code." ); };
 #endif
 
                                                          Result       && operator *  ()       && { return  result(); }
                                                          Result       &  operator *  ()       &  { return  result(); }
                                                          Result const &  operator *  () const &  { return  result(); }
-	BOOST_ATTRIBUTES( BOOST_RESTRICTED_FUNCTION_RETURN ) Result       *  operator -> ()          { return &result(); }
+    BOOST_ATTRIBUTES( BOOST_RESTRICTED_FUNCTION_RETURN ) Result       *  operator -> ()          { return &result(); }
     BOOST_ATTRIBUTES( BOOST_RESTRICTED_FUNCTION_RETURN ) Result const *  operator -> () const    { return &result(); }
 
-	Error          error ()       noexcept { BOOST_ASSERT_MSG( inspected() && !*this, "Querying the error of a (possibly) succeeded operation." ); return Error(); }
-	Result       & result()       noexcept { BOOST_ASSERT_MSG( inspected() &&  *this, "Querying the result of a (possibly) failed operation."   ); return result_; }
-	Result const & result() const noexcept { return const_cast<Result &>( *this ).result(); }
+    Error          error ()       noexcept { BOOST_ASSERT_MSG( inspected() && !*this, "Querying the error of a (possibly) succeeded operation." ); return Error(); }
+    Result       & result()       noexcept { BOOST_ASSERT_MSG( inspected() &&  *this, "Querying the result of a (possibly) failed operation."   ); return result_; }
+    Result const & result() const noexcept { return const_cast<Result &>( *this ).result(); }
 
-					  bool inspected() const noexcept {                    return BOOST_LIKELY(                    inspected_ ); }
+                      bool inspected() const noexcept {                    return BOOST_LIKELY(                    inspected_ ); }
                       bool succeeded() const noexcept { inspected_ = true; return BOOST_LIKELY( static_cast<bool>( result_ )  ); }
-	explicit operator bool          () const noexcept {                    return succeeded()                                  ; }
+    explicit operator bool          () const noexcept {                    return succeeded()                                  ; }
 
     BOOST_OPTIMIZE_FOR_SIZE_BEGIN()
 #ifndef BOOST_NO_EXCEPTIONS //...mrmlj...kill this duplication with the unspecialized template...
     BOOST_ATTRIBUTES( BOOST_MINSIZE )
-	void throw_if_error()
-	{
-		BOOST_ASSERT( !std::uncaught_exception() );
-		if ( BOOST_LIKELY( succeeded() ) )
-		{
-			BOOST_ASSUME( inspected_ );
-			return;
-		}
-		BOOST_ASSUME( inspected_ );
-		throw_error();
-	}
+    void throw_if_error()
+    {
+        BOOST_ASSERT( !std::uncaught_exception() );
+        if ( BOOST_LIKELY( succeeded() ) )
+        {
+            BOOST_ASSUME( inspected_ );
+            return;
+        }
+        BOOST_ASSUME( inspected_ );
+        throw_error();
+    }
 
-	void throw_if_uninspected_error() noexcept( false )
-	{
-		if ( !inspected() )
-		{
-			throw_if_error();
-		}
-		BOOST_ASSUME( inspected_ );
-	}
+    void throw_if_uninspected_error() noexcept( false )
+    {
+        if ( !inspected() )
+        {
+            throw_if_error();
+        }
+        BOOST_ASSUME( inspected_ );
+    }
 
-	BOOST_ATTRIBUTES( BOOST_DOES_NOT_RETURN, BOOST_COLD )
-	void throw_error() noexcept( false )
-	{
-		BOOST_ASSERT( !succeeded() );
-		BOOST_ASSERT( !std::uncaught_exception() );
-		make_and_throw_exception( error() );
-	}
+    BOOST_ATTRIBUTES( BOOST_DOES_NOT_RETURN, BOOST_COLD )
+    void throw_error() noexcept( false )
+    {
+        BOOST_ASSERT( !succeeded() );
+        BOOST_ASSERT( !std::uncaught_exception() );
+        make_and_throw_exception( error() );
+    }
 #endif // BOOST_NO_EXCEPTIONS
 
     BOOST_ATTRIBUTES( BOOST_COLD )
     std::exception_ptr BOOST_CC_REG make_exception_ptr()
-	{
-		BOOST_ASSERT( !succeeded() );
-		BOOST_ASSERT( !std::uncaught_exception() );
-		return make_exception_ptr( error() );
-	}
+    {
+        BOOST_ASSERT( !succeeded() );
+        BOOST_ASSERT( !std::uncaught_exception() );
+        return make_exception_ptr( error() );
+    }
     BOOST_OPTIMIZE_FOR_SIZE_END()
 
 private: friend class fallible_result<Result, Error>;
-	Result result_;
+    Result result_;
 
 protected:
     mutable bool inspected_;
@@ -351,79 +351,79 @@ template <class Error>
 class result_or_error<void, Error, void>
 {
 public:
-	template <typename Source>
+    template <typename Source>
     result_or_error( Source && BOOST_RESTRICTED_REF error, typename std::enable_if<!std::is_same<Source, fallible_result<void, Error>>::value>::type const * = nullptr )
         noexcept( std::is_nothrow_constructible<Error, Source &&>::value )
         : error_( std::forward<Source>( error ) ), succeeded_( false ), inspected_( false ) {}
 
     result_or_error( no_err_t ) noexcept : succeeded_( true ), inspected_( false ) {}
 
-	result_or_error( result_or_error && BOOST_RESTRICTED_REF other ) noexcept( std::is_nothrow_move_constructible<Error>::value )
+    result_or_error( result_or_error && BOOST_RESTRICTED_REF other ) noexcept( std::is_nothrow_move_constructible<Error>::value )
         : succeeded_( other.succeeded() ), inspected_( false )
-	{
-		if ( BOOST_UNLIKELY( !succeeded_ ) )
-		{
-			auto const ptr( new ( &error_ ) Error ( std::move( other.error_ ) ) );
-			BOOST_ASSUME( ptr );
-			BOOST_ASSUME( !other.succeeded_ );
-		}
-	}
+    {
+        if ( BOOST_UNLIKELY( !succeeded_ ) )
+        {
+            auto const ptr( new ( &error_ ) Error ( std::move( other.error_ ) ) );
+            BOOST_ASSUME( ptr );
+            BOOST_ASSUME( !other.succeeded_ );
+        }
+    }
 
     result_or_error( result_or_error const & ) = delete;
 
     BOOST_ATTRIBUTES( BOOST_MINSIZE )
-	~result_or_error() noexcept( std::is_nothrow_destructible<Error>::value )
-	{
-		if ( BOOST_UNLIKELY( !succeeded_ ) )
+    ~result_or_error() noexcept( std::is_nothrow_destructible<Error>::value )
+    {
+        if ( BOOST_UNLIKELY( !succeeded_ ) )
             error_.~Error();
-	};
+    };
 
-	Error const & error() noexcept { BOOST_ASSERT_MSG( inspected() && !*this, "Querying the error of a (possibly) succeeded operation." ); return error_; }
+    Error const & error() noexcept { BOOST_ASSERT_MSG( inspected() && !*this, "Querying the error of a (possibly) succeeded operation." ); return error_; }
 
-					  bool inspected() const noexcept {                    return BOOST_LIKELY( inspected_ ); }
+                      bool inspected() const noexcept {                    return BOOST_LIKELY( inspected_ ); }
                       bool succeeded() const noexcept { inspected_ = true; return BOOST_LIKELY( succeeded_ ); }
-	explicit operator bool          () const noexcept {                    return succeeded()               ; }
+    explicit operator bool          () const noexcept {                    return succeeded()               ; }
 
 BOOST_OPTIMIZE_FOR_SIZE_BEGIN()
 #ifndef BOOST_NO_EXCEPTIONS //...mrmlj...kill this duplication...
     BOOST_ATTRIBUTES( BOOST_MINSIZE )
-	void throw_if_error()
-	{
-		BOOST_ASSERT( !std::uncaught_exception() );
-		if ( BOOST_LIKELY( succeeded() ) )
-		{
-			BOOST_ASSUME( inspected_ );
-			return;
-		}
-		BOOST_ASSUME( inspected_ );
-		throw_error();
-	}
+    void throw_if_error()
+    {
+        BOOST_ASSERT( !std::uncaught_exception() );
+        if ( BOOST_LIKELY( succeeded() ) )
+        {
+            BOOST_ASSUME( inspected_ );
+            return;
+        }
+        BOOST_ASSUME( inspected_ );
+        throw_error();
+    }
 
-	void throw_if_uninspected_error() noexcept( false )
-	{
-		if ( !inspected() )
-		{
-			throw_if_error();
-		}
-		BOOST_ASSUME( inspected_ );
-	}
+    void throw_if_uninspected_error() noexcept( false )
+    {
+        if ( !inspected() )
+        {
+            throw_if_error();
+        }
+        BOOST_ASSUME( inspected_ );
+    }
 
-	BOOST_ATTRIBUTES( BOOST_DOES_NOT_RETURN, BOOST_COLD )
-	void throw_error() noexcept( false )
-	{
-		BOOST_ASSERT( !succeeded() );
-		BOOST_ASSERT( !std::uncaught_exception() );
-		make_and_throw_exception( error() );
-	}
+    BOOST_ATTRIBUTES( BOOST_DOES_NOT_RETURN, BOOST_COLD )
+    void throw_error() noexcept( false )
+    {
+        BOOST_ASSERT( !succeeded() );
+        BOOST_ASSERT( !std::uncaught_exception() );
+        make_and_throw_exception( error() );
+    }
 #endif // BOOST_NO_EXCEPTIONS
 
     BOOST_ATTRIBUTES( BOOST_COLD )
     std::exception_ptr BOOST_CC_REG make_exception_ptr()
-	{
-		BOOST_ASSERT( !succeeded() );
-		BOOST_ASSERT( !std::uncaught_exception() );
-		return make_exception_ptr( error() );
-	}
+    {
+        BOOST_ASSERT( !succeeded() );
+        BOOST_ASSERT( !std::uncaught_exception() );
+        return make_exception_ptr( error() );
+    }
 BOOST_OPTIMIZE_FOR_SIZE_END()
 
 private: friend class fallible_result<void, Error>;
