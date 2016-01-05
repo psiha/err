@@ -3,7 +3,7 @@
 /// \file errno.hpp
 /// ---------------
 ///
-/// Copyright (c) Domagoj Saric 2015.
+/// Copyright (c) Domagoj Saric 2015 - 2016.
 ///
 /// Use, modification and distribution is subject to the
 /// Boost Software License, Version 1.0.
@@ -19,6 +19,10 @@
 #pragma once
 //------------------------------------------------------------------------------
 #include <boost/config.hpp>
+
+#ifndef NDEBUG
+#include "detail/thread_singleton.hpp"
+#endif // !NDEBUG
 
 #include <cerrno>
 #include <cstdint>
@@ -62,18 +66,19 @@ struct last_errno
     operator value_type () const { return get(); }
 
 #ifndef NDEBUG
-    last_errno() noexcept { BOOST_ASSERT_MSG( instance_counter++ == 0, "More than one last_errno instance detected (the last one overrides the previous ones)." ); }
-   ~last_errno() noexcept { BOOST_ASSERT_MSG( instance_counter-- == 1, "More than one last_errno instance detected (the last one overrides the previous ones)." ); }
-    static BOOST_THREAD_LOCAL_POD std::uint8_t instance_counter;
-
+    last_errno() noexcept { BOOST_ASSERT_MSG( ++instance_counter() == 1, "More than one last_errno instance detected (the last one overrides the previous ones)." ); }
+   ~last_errno() noexcept { BOOST_ASSERT_MSG( --instance_counter() == 0, "More than one last_errno instance detected (the last one overrides the previous ones)." ); }
+    std::uint8_t & instance_counter() { return detail::thread_singleton<std::uint8_t, last_errno>::instance(); }
+    // debugging aid (for 'live' errno monitoring)
     static /*thread_local*/ value_type const volatile & value; //...mrmlj...Apple still (OSX10.11/iOS9.1) hasn't implemented C++ TLS ...
 #endif // NDEBUG
 }; // struct last_errno
 
 #ifndef NDEBUG
-// GCC 4.9 from Android NDK 10e ICEs if BOOST_OVERRIDABLE_SYMBOL is put 'in the front'
-BOOST_THREAD_LOCAL_POD std::uint8_t                            last_errno::instance_counter( 0 ) /*BOOST_OVERRIDABLE_MEMBER_SYMBOL*/        ;
-/*thread_local*/       last_errno::value_type const volatile & last_errno::value                 /*BOOST_OVERRIDABLE_MEMBER_SYMBOL*/ = errno;
+/// \note GCC 4.9 from Android NDK 10e ICEs if BOOST_OVERRIDABLE_SYMBOL is
+/// put 'in the front' and Clang does not like it at the end...
+///                                           (16.12.2015.) (Domagoj Saric)
+/*thread_local*/ last_errno::value_type const volatile & last_errno::value BOOST_OVERRIDABLE_MEMBER_SYMBOL = errno;
 #endif // NDEBUG
 
 

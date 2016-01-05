@@ -3,7 +3,7 @@
 /// \file fallible_result.hpp
 /// -------------------------
 ///
-/// Copyright (c) Domagoj Saric 2015.
+/// Copyright (c) Domagoj Saric 2015 - 2016.
 ///
 /// Use, modification and distribution is subject to the
 /// Boost Software License, Version 1.0.
@@ -22,6 +22,10 @@
 
 #include <boost/assert.hpp>
 #include <boost/config.hpp>
+
+#ifndef NDEBUG
+#include "detail/thread_singleton.hpp"
+#endif // !NDEBUG
 
 #include <cstdint>
 #include <new>
@@ -45,17 +49,81 @@ namespace err
 ///   otherwise (exception handling mode).
 ///
 /// \detail
-///  these objects are not meant to be saved (on the stack or "as members)"
+/// These objects are designed to be used solely as rvalues, i.e. they are not
+/// meant to be saved (on the stack or as members): either they are to be left
+/// unreferenced or implicitly converted to T [when they self(convert&)throw in
+/// case of failure] or to be explicitly saved for later inspection (converted
+/// to a result_or_error lvalue).<BR>
+/// Correct usage is enforced at compile-time where possible and with runtime
+/// assertions in the very few areas where the language does not yet provide the
+/// necessary constructs (e.g. rvalue destructors) for compile-time checks.<BR>
+/// One such area is especially tricky: the handling of multiple 'live'
+/// (coexisting) fallible_results per-thread. Normally this would indicate a
+/// programmer error (i.e. that the programmer accidentally saved a
+/// fallible_result, e.g. in an auto variable, and forgot about it so
+/// compile-time checks didn't kick in) except in one case: expressions with
+/// multiple function calls that return/create fallible_results (e.g. calls to
+/// functions with multiple parameters). Because the standard (intentionally)
+/// leaves the order of construction of function arguments unspecified (even to
+/// the point that the implicit conversion of a return fallible_result<T, err_t>
+/// to T or result_or_error<T, err_t> is not guaranteed to happen before the
+/// construction of the next fallible_result<U, err_t> begins in the current
+/// expression) we have to allow the possibility of multiple coexisting
+/// fallible_results[1]. However, two bad things happen if we allow this:
+/// * correct usage cannot be checked as 'neatly' - we can only check that at
+///   least one fallible_result instance has been inspected on a given thread
+///   before leaving the current scope
+/// * multiple live fallible_results -> multiple possibly throwing destructors
+///   -> possible std::terminate call - we can workaround it by making the
+///   destructors throw only if !std::uncaught_exception(). [2]
+/// <BR>
+/// [1] One exception, for obvious reasons, are void functions (returning
+/// fallible_result<void, err_t>). For this reason the fallible_result<void>
+/// partial specialisation does not allow multiple coexisting instances.
+/// [2] This does mean that construction of other parameters can proceed even
+/// if a previous one has already failed but this is actually not that different
+/// from what you have to expect anyway precisely because of the undefined order
+/// in which parameters are constructed. If this behaviour is undesired/strictly
+/// prohibited it can be solved two ways:
+/// * on the 'library' side - Boost.Err/fallible_result can provide a
+///   'failed_result_pending()'-like function (the equivalent of
+///   std::uncaught_exception()) which a function returning a fallible_result
+///   can check and abort/return early if necessary
+/// * on the 'client' side - the user can simply first save the fallible_results
+///   as named (T or result_or_error<T>) objects/lvalues and then call the
+///   function/evaulate the expression with the multiple objects/arguments.
+/// (see more @
+/// http://boost.2283326.n4.nabble.com/err-RFC-td4681600.html#a4681672)
 ///
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifndef NDEBUG
 namespace detail
 {
-    // https://devforums.apple.com/message/1101679#1101679
-    // http://comments.gmane.org/gmane.editors.textmate.general/38535
-    // https://github.com/textmate/textmate/commit/172ce9d4282e408fe60b699c432390b9f6e3f74a
-    BOOST_THREAD_LOCAL_POD std::uint8_t fallible_result_counter( 0 ) /*BOOST_OVERRIDABLE_SYMBOL*/; // GCC 4.9 from Android NDK 10e ICEs if BOOST_OVERRIDABLE_SYMBOL is put 'in the front' and Clang does not like at the end...
+    struct fallible_result_sanitizer
+    {
+        std::uint8_t live_instance_counter  = 0;
+        bool         at_least_one_inspected = false;
+
+        std::uint8_t live_void_instance_counter = 0;
+
+        static fallible_result_sanitizer & singleton() { return thread_singleton<fallible_result_sanitizer>::instance(); }
+
+        static void    add_instance(                      ) { singleton().   add_instance_aux(           ); }
+        static void remove_instance( bool const inspected ) { singleton().remove_instance_aux( inspected ); }
+
+    private:
+        void add_instance_aux() { ++live_instance_counter; }
+
+        void remove_instance_aux( bool const inspected )
+        {
+            BOOST_ASSERT_MSG( live_instance_counter > 0, "Mismatched add/remove instance." );
+            at_least_one_inspected |= inspected;
+            --live_instance_counter;
+            BOOST_ASSERT_MSG( live_instance_counter || at_least_one_inspected, "Uninspected fallible_result<T>." );
+            at_least_one_inspected &= ( live_instance_counter != 0 );
+        }
+    }; // struct fallible_result_sanitizer
 } // namespace detail
 #endif // NDEBUG
 
@@ -68,22 +136,18 @@ public:
     fallible_result( T && BOOST_RESTRICTED_REF argument ) noexcept( std::is_nothrow_constructible<result_or_error<Result, Error>, T &&>::value )
         : result_or_error_( std::forward<T>( argument ) )
     {
-        BOOST_ASSERT_MSG
-        (
-            detail::fallible_result_counter++ == 0,
-            "More than one fallible_result instance detected"
-        );
+    #ifndef NDEBUG
+        detail::fallible_result_sanitizer::add_instance();
+    #endif // NDEBUG
         BOOST_ASSUME( !result_or_error_.inspected_ );
     }
 
     fallible_result( fallible_result && BOOST_RESTRICTED_REF other ) noexcept( std::is_nothrow_move_constructible<result_or_error<Result, Error>>::value )
-        : result_or_error_( std::move( std::move( other ).operator result_or_error<Result, Error> &&() ) )
+        : result_or_error_( std::move( std::move( other ).as_result_or_error() ) )
     {
-        BOOST_ASSERT_MSG
-        (
-            detail::fallible_result_counter++ == 0,
-            "More than one fallible_result instance detected"
-        );
+    #ifndef NDEBUG
+        detail::fallible_result_sanitizer::add_instance();
+    #endif // NDEBUG
         BOOST_ASSUME( !result_or_error_.inspected_ );
     }
 
@@ -91,11 +155,9 @@ public:
 
     ~fallible_result() noexcept( false )
     {
-        BOOST_ASSERT_MSG
-        (
-            detail::fallible_result_counter-- == 1,
-            "More than one fallible_result instance detected"
-        );
+    #ifndef NDEBUG
+        detail::fallible_result_sanitizer::remove_instance( result_or_error_.inspected_ );
+    #endif // NDEBUG
         result_or_error_.throw_if_uninspected_error();
         BOOST_ASSUME( result_or_error_.inspected_ );
     };
@@ -160,8 +222,8 @@ public:
     {
         BOOST_ASSERT_MSG
         (
-            detail::fallible_result_counter++ == 0,
-            "More than one fallible_result instance detected"
+            detail::fallible_result_sanitizer::singleton().live_void_instance_counter++ == 0,
+            "More than one fallible_result<void> instance detected"
         );
         BOOST_ASSUME( !void_or_error_.inspected_ );
     }
@@ -171,8 +233,8 @@ public:
     {
         BOOST_ASSERT_MSG
         (
-            detail::fallible_result_counter++ == 0,
-            "More than one fallible_result instance detected"
+            detail::fallible_result_sanitizer::singleton().live_void_instance_counter++ == 0,
+            "More than one fallible_result<void> instance detected"
         );
         BOOST_ASSUME( !void_or_error_.inspected_ );
     }
@@ -182,8 +244,8 @@ public:
     {
         BOOST_ASSERT_MSG
         (
-            detail::fallible_result_counter-- == 1,
-            "More than one fallible_result instance detected"
+            detail::fallible_result_sanitizer::singleton().live_void_instance_counter-- == 1,
+            "More than one fallible_result<void> instance detected"
         );
         void_or_error_.throw_if_uninspected_error();
         BOOST_ASSUME( void_or_error_.inspected_ );
@@ -217,6 +279,10 @@ template <typename Result, typename Error> bool operator==( fallible_result<Resu
 template <typename Result, typename Error> bool operator==( fallible_result<Result, Error> && result, an_err_t ) noexcept { return !std::move( result ).succeeded(); }
 template <typename Result, typename Error> bool operator!=( fallible_result<Result, Error> && result, no_err_t ) noexcept { return !std::move( result ).succeeded(); }
 template <typename Result, typename Error> bool operator!=( fallible_result<Result, Error> && result, an_err_t ) noexcept { return  std::move( result ).succeeded(); }
+
+
+template <typename T>
+using infallible_result = T;
 
 //------------------------------------------------------------------------------
 } // namespace err

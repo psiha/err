@@ -3,7 +3,7 @@
 /// \file result_or_error.hpp
 /// -------------------------
 ///
-/// Copyright (c) Domagoj Saric 2015.
+/// Copyright (c) Domagoj Saric 2015 - 2016.
 ///
 /// Use, modification and distribution is subject to the
 /// Boost Software License, Version 1.0.
@@ -18,11 +18,11 @@
 #define result_or_error_hpp__3A4D7BDA_D64A_456B_AA06_82E407BB8EAB
 #pragma once
 //------------------------------------------------------------------------------
+#include "exceptions.hpp"
+
 #include <boost/assert.hpp>
 #include <boost/config.hpp>
-#include <boost/throw_exception.hpp>
 
-#include <exception>
 #include <type_traits>
 #include <utility>
 //------------------------------------------------------------------------------
@@ -42,52 +42,6 @@ struct an_err_t {};
 static an_err_t const an_err  = {};
 static an_err_t const failure = {};
 static an_err_t const failed  = {};
-
-BOOST_OPTIMIZE_FOR_SIZE_BEGIN()
-
-////////////////////////////////////////////////////////////////////////////////
-//
-// boost::err::make_exception()
-// ----------------------------
-//
-////////////////////////////////////////////////////////////////////////////////
-///
-/// \brief Transform an error code/object into a corresponding exception.
-/// 
-/// \detail Intended to be specialised or overloaded for user types. Boost.Err
-/// will call it unqualified in order to allow ADL to kick in.
-///
-/// \throws nothing
-///
-////////////////////////////////////////////////////////////////////////////////
-
-template <class Error>
-Error && make_exception( Error && error ) { return std::forward<Error>( error ); }
-
-
-template <class Exception>
-BOOST_ATTRIBUTES( BOOST_DOES_NOT_RETURN, BOOST_COLD )
-typename std::enable_if<!std::is_fundamental<Exception>::value>::type
-BOOST_CC_REG throw_exception( Exception && exception ) { BOOST_THROW_EXCEPTION( std::forward<Exception>( exception ) ); }
-
-template <typename Exception>
-BOOST_ATTRIBUTES( BOOST_DOES_NOT_RETURN, BOOST_COLD )
-typename std::enable_if<std::is_fundamental<Exception>::value>::type
-BOOST_CC_REG throw_exception( Exception const exception ) { BOOST_THROW_EXCEPTION( exception ); }
-
-template <typename Error>
-BOOST_ATTRIBUTES( BOOST_DOES_NOT_RETURN, BOOST_COLD )
-void BOOST_CC_REG make_and_throw_exception( Error && error ) { throw_exception( std::move( make_exception( std::forward<Error>( error ) ) ) ); }
-
-template <typename Error>
-BOOST_ATTRIBUTES( BOOST_DOES_NOT_RETURN, BOOST_COLD )
-void BOOST_CC_REG make_and_throw_exception() { make_and_throw_exception<Error>( Error() ); }
-
-template <typename Error>
-BOOST_ATTRIBUTES( BOOST_COLD )
-std::exception_ptr BOOST_CC_REG make_exception_ptr( Error && error ) { return std::make_exception_ptr( make_exception( std::forward<Error>( error ) ) ); }
-
-BOOST_OPTIMIZE_FOR_SIZE_END()
 
 
 template <class Result, class Error>
@@ -120,7 +74,7 @@ class result_or_error
 public:
     /// \note Be liberal with the constructor argument type in order to allow
     /// emplacement/eliminate an intermediate move constructor call (as it can
-    /// actually be nontrivial, e.g. with MSVC14 RC std::string).
+    /// actually be nontrivial, e.g. classes w/ SBO).
     ///                                       (18.05.2015.) (Domagoj Saric)
     template <typename Source> result_or_error( Source && BOOST_RESTRICTED_REF result, typename std::enable_if<std::is_constructible<Result, Source &&>::value>::type const * = nullptr ) noexcept( std::is_nothrow_constructible<Result, Source &&>::value ) : succeeded_( true  ), inspected_( false ), result_( std::forward<Source>( result ) ) {}
     template <typename Source> result_or_error( Source && BOOST_RESTRICTED_REF error , typename std::enable_if<std::is_constructible<Error , Source &&>::value>::type const * = nullptr ) noexcept( std::is_nothrow_constructible<Error , Source &&>::value ) : succeeded_( false ), inspected_( false ), error_ ( std::forward<Source>( error  ) ) {}
@@ -158,10 +112,8 @@ public:
     ~result_or_error() noexcept( std::is_nothrow_destructible<Result>::value && std::is_nothrow_destructible<Error>::value )
     {
         //BOOST_ASSERT_MSG( inspected(), "Ignored error return code." );
-        if ( BOOST_LIKELY( succeeded_ ) )
-            result_.~Result();
-        else
-            error_.~Error();
+        if ( BOOST_LIKELY( succeeded_ ) ) result_.~Result();
+        else                              error_ .~Error ();
     };
     BOOST_OPTIMIZE_FOR_SIZE_END()
 
@@ -258,9 +210,8 @@ class result_or_error<Result, Error, typename std::enable_if<compressed_result_e
 {
 public:
     template <typename Source>
-    result_or_error( Source && BOOST_RESTRICTED_REF result ) noexcept( std::is_nothrow_constructible<Result, Source &&>::value ) : result_( std::forward<Source>( result ) ), inspected_( false ) {}
-
-    result_or_error( result_or_error && BOOST_RESTRICTED_REF other ) noexcept( std::is_nothrow_move_constructible<Result>::value )
+    result_or_error( Source          && BOOST_RESTRICTED_REF result ) noexcept( std::is_nothrow_constructible     <Result, Source &&>::value ) : result_( std::forward<Source>( result ) ), inspected_( false ) {}
+    result_or_error( result_or_error && BOOST_RESTRICTED_REF other  ) noexcept( std::is_nothrow_move_constructible<Result           >::value )
         :
         result_   ( std::move( other.result_ ) ),
         inspected_( false                      )
