@@ -110,13 +110,15 @@ public:
         auto * p_t( static_cast<wrapper *>( pthread_getspecific( tls_key_ ) ) );
         if ( BOOST_UNLIKELY( p_t == nullptr ) )
         {
-            p_t = new wrapper();
-            if ( BOOST_UNLIKELY( pthread_setspecific( tls_key_, p_t ) != 0 ) )
+            /// \note First allocate the TLS slot.
+            ///                               (06.01.2016.) (Domagoj Saric)
+            if ( BOOST_UNLIKELY( pthread_setspecific( tls_key_, &tls_key_ ) != 0 ) )
             {
                 BOOST_ASSERT( errno == ENOMEM );
-                delete p_t;
                 make_and_throw_exception<std::bad_alloc>();
             }
+            p_t = new wrapper();
+            BOOST_VERIFY( pthread_setspecific( tls_key_, p_t ) == 0 );
         }
         return p_t->instance;
     }
