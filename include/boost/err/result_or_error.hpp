@@ -111,6 +111,13 @@ public:
     BOOST_ATTRIBUTES( BOOST_MINSIZE )
     ~result_or_error() noexcept( std::is_nothrow_destructible<Result>::value && std::is_nothrow_destructible<Error>::value )
     {
+        /// \note This assertion is too naive: multiple result_or_error
+        /// instances have to be supported (and allow early function exist after
+        /// only one instance is expected and found as failed).
+        ///                                   (05.01.2016.) (Domagoj Saric)
+        /// \todo Move the fallible_result_sanitizer logic 'up here' to handle
+        /// (emsure at least one inspected instance on scope exit) both types.
+        ///                                   (05.01.2016.) (Domagoj Saric)
         //BOOST_ASSERT_MSG( inspected(), "Ignored error return code." );
         if ( BOOST_LIKELY( succeeded_ ) ) result_.~Result();
         else                              error_ .~Error ();
@@ -131,7 +138,7 @@ public:
                       bool succeeded() const noexcept { inspected_ = true; return BOOST_LIKELY( succeeded_ ); }
     explicit operator bool          () const noexcept {                    return succeeded()               ; }
 
-    BOOST_OPTIMIZE_FOR_SIZE_BEGIN()
+BOOST_OPTIMIZE_FOR_SIZE_BEGIN()
 #ifndef BOOST_NO_EXCEPTIONS
     BOOST_ATTRIBUTES( BOOST_MINSIZE )
     void BOOST_CC_REG throw_if_error()
@@ -174,7 +181,7 @@ public:
         BOOST_ASSERT( !std::uncaught_exception() );
         return make_exception_ptr( std::move( error_ ) );
     }
-    BOOST_OPTIMIZE_FOR_SIZE_END()
+BOOST_OPTIMIZE_FOR_SIZE_END()
 
 protected:
             bool succeeded_;
