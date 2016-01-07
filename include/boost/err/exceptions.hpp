@@ -23,6 +23,7 @@
 
 #include <exception>
 #include <type_traits>
+#include <utility>
 //------------------------------------------------------------------------------
 namespace boost
 {
