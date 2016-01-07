@@ -78,8 +78,8 @@ std::exception_ptr BOOST_CC_REG make_exception_ptr( Error && error ) { return st
 namespace detail
 {
     template <typename Error>
-    BOOST_ATTRIBUTES( BOOST_DOES_NOT_RETURN, BOOST_COLD )
-    void BOOST_CC_REG conditional_throw( Error & error )
+    BOOST_ATTRIBUTES( BOOST_COLD )
+    void BOOST_CC_REG conditional_throw( Error && error )
     {
         if ( BOOST_LIKELY( !std::uncaught_exception() ) )
             make_and_throw_exception( std::move( error ) );
