@@ -143,7 +143,7 @@ BOOST_OPTIMIZE_FOR_SIZE_BEGIN()
     BOOST_ATTRIBUTES( BOOST_MINSIZE )
     void BOOST_CC_REG throw_if_error()
     {
-        BOOST_ASSERT( !std::uncaught_exception() );
+        //BOOST_ASSERT( !std::uncaught_exception() );
         if ( succeeded() )
         {
             BOOST_ASSUME( inspected_ );
@@ -168,7 +168,7 @@ BOOST_OPTIMIZE_FOR_SIZE_BEGIN()
     void BOOST_CC_REG throw_error() noexcept( false )
     {
         BOOST_ASSERT( !succeeded() );
-        BOOST_ASSERT( !std::uncaught_exception() );
+        //BOOST_ASSERT( !std::uncaught_exception() );
         make_and_throw_exception( std::move( error_ ) );
     }
 #endif // BOOST_NO_EXCEPTIONS
@@ -251,7 +251,7 @@ public:
     BOOST_ATTRIBUTES( BOOST_MINSIZE )
     void throw_if_error()
     {
-        BOOST_ASSERT( !std::uncaught_exception() );
+        //BOOST_ASSERT( !std::uncaught_exception() );
         if ( BOOST_LIKELY( succeeded() ) )
         {
             BOOST_ASSUME( inspected_ );
@@ -264,18 +264,16 @@ public:
     void throw_if_uninspected_error() noexcept( false )
     {
         if ( !inspected() )
-        {
             throw_if_error();
-        }
         BOOST_ASSUME( inspected_ );
     }
 
-    BOOST_ATTRIBUTES( BOOST_DOES_NOT_RETURN, BOOST_COLD )
-    void throw_error() noexcept( false )
+    BOOST_ATTRIBUTES( BOOST_COLD )
+    void throw_error()
     {
         BOOST_ASSERT( !succeeded() );
-        BOOST_ASSERT( !std::uncaught_exception() );
-        make_and_throw_exception( error() );
+        //BOOST_ASSERT( !std::uncaught_exception() );
+        detail::conditional_throw( error() );
     }
 #endif // BOOST_NO_EXCEPTIONS
 
@@ -360,9 +358,7 @@ BOOST_OPTIMIZE_FOR_SIZE_BEGIN()
     void throw_if_uninspected_error() noexcept( false )
     {
         if ( !inspected() )
-        {
             throw_if_error();
-        }
         BOOST_ASSUME( inspected_ );
     }
 
