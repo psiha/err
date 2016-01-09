@@ -21,6 +21,9 @@
 #include <boost/assert.hpp>
 #include <boost/config.hpp>
 
+#ifndef NDEBUG
+#include <cerrno>
+#endif // !NDEBUG
 #include <new>
 #include <type_traits>
 
@@ -57,14 +60,27 @@ namespace detail
 ///                                           (16.12.2015.) (Domagoj Saric)
 ///
 ////////////////////////////////////////////////////////////////////////////////
+/// \internal \note
+/// GCC 4.9 and Clang 3.6 (from Android NDK 10e) fail if std::is_pod<T> (and
+/// std::is_trivially_constructible<T>) is asserted in 'cricular' situations
+/// where thread_singleton<T> is used within a T's inline member function.
+/// It is not a critical issue though since the compiler will complain if T
+/// does not work with BOOST_THREAD_LOCAL_POD in the first implementation and
+/// the second implementation supports non-PODs anyway.
+///                                           (08.01.2016.) (Domagoj Saric)
+////////////////////////////////////////////////////////////////////////////////
 
 #ifdef BOOST_THREAD_LOCAL_POD
 template <typename T, typename Tag = void>
 struct thread_singleton
 {
-    static_assert( std::is_pod<T>::value, "" );
     static T & instance()
     {
+    #if defined( __GNUC__ )
+        static_assert( std::is_trivially_destructible<T>::value, "" );
+    #else
+        static_assert( std::is_pod                   <T>::value, "" );
+    #endif // compiler
         static BOOST_THREAD_LOCAL_POD T instance_;
         return instance_;
     }
@@ -77,6 +93,12 @@ public:
     BOOST_ATTRIBUTES( BOOST_RESTRICTED_FUNCTION_L3, BOOST_MINSIZE ) // may throw :/
     static T & instance()
     {
+    #if defined( __GNUC__ )
+        static_assert( std::is_trivially_destructible<T>::value, "" );
+    #else
+        static_assert( std::is_pod                   <T>::value, "" );
+    #endif // compiler
+
         struct wrapper { T instance; }; // workaround for arrays
         struct key_creator_t
         {
@@ -110,9 +132,9 @@ public:
         auto * p_t( static_cast<wrapper *>( pthread_getspecific( tls_key_ ) ) );
         if ( BOOST_UNLIKELY( p_t == nullptr ) )
         {
-            /// \note First allocate the TLS slot.
+            /// \note First allocate the TLS slot (for simpler error handling).
             ///                               (06.01.2016.) (Domagoj Saric)
-            if ( BOOST_UNLIKELY( pthread_setspecific( tls_key_, &tls_key_ ) != 0 ) )
+            if ( BOOST_UNLIKELY( pthread_setspecific( tls_key_, /*nonnull dummy*/&tls_key_ ) != 0 ) )
             {
                 BOOST_ASSERT( errno == ENOMEM );
                 make_and_throw_exception<std::bad_alloc>();
@@ -127,6 +149,7 @@ private:
     static pthread_key_t  tls_key_;
     static pthread_once_t tls_allocation_guard_;
 }; // class thread_singleton
+
 template <typename T, typename Tag> pthread_key_t  thread_singleton<T, Tag>::tls_key_              = static_cast<pthread_key_t>( -1 );
 template <typename T, typename Tag> pthread_once_t thread_singleton<T, Tag>::tls_allocation_guard_ = PTHREAD_ONCE_INIT;
 #endif // !BOOST_THREAD_LOCAL_POD
