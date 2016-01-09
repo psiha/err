@@ -25,6 +25,8 @@
 
 #ifndef NDEBUG
 #include "detail/thread_singleton.hpp"
+
+#include <exception>
 #endif // !NDEBUG
 
 #include <cstdint>
@@ -72,7 +74,8 @@ namespace err
 /// fallible_results[1]. However, two bad things happen if we allow this:
 /// * correct usage cannot be checked as 'neatly' - we can only check that at
 ///   least one fallible_result instance has been inspected on a given thread
-///   before leaving the current scope
+///   before leaving the current scope (or an exception has been thrown by '3rd
+///   party code')
 /// * multiple live fallible_results -> multiple possibly throwing destructors
 ///   -> possible std::terminate call - we can workaround it by making the
 ///   destructors throw only if !std::uncaught_exception(). [2]
@@ -120,7 +123,13 @@ namespace detail
             BOOST_ASSERT_MSG( live_instance_counter > 0, "Mismatched add/remove instance." );
             at_least_one_inspected |= inspected;
             --live_instance_counter;
-            BOOST_ASSERT_MSG( live_instance_counter || at_least_one_inspected, "Uninspected fallible_result<T>." );
+            BOOST_ASSERT_MSG
+            (
+                at_least_one_inspected ||
+                live_instance_counter  ||  // there are still live fallible_results (allow that one of those will be inspected even if none have been so far)
+                std::uncaught_exception(), // a '3rd party' exception caused early exit
+                "Uninspected fallible_result<T>."
+            );
             at_least_one_inspected &= ( live_instance_counter != 0 );
         }
     }; // struct fallible_result_sanitizer
@@ -160,7 +169,7 @@ public:
     #endif // NDEBUG
         result_or_error_.throw_if_uninspected_error();
         BOOST_ASSUME( result_or_error_.inspected_ );
-    };
+    }
 
     result_or_error<Result, Error> && as_result_or_error() && noexcept( true ) { std::move( *this ).ignore_failure(); return std::move( result_or_error_ ); }
 
@@ -249,7 +258,7 @@ public:
         );
         void_or_error_.throw_if_uninspected_error();
         BOOST_ASSUME( void_or_error_.inspected_ );
-    };
+    }
     BOOST_OPTIMIZE_FOR_SIZE_END()
 
     operator result && () && noexcept { static_cast<fallible_result &&>( *this ).ignore_failure(); return std::move( void_or_error_ ); }
