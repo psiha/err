@@ -107,7 +107,7 @@ public:
 
     result_or_error( result_or_error const & ) = delete;
 
-    BOOST_OPTIMIZE_FOR_SIZE_BEGIN()
+BOOST_OPTIMIZE_FOR_SIZE_BEGIN()
     BOOST_ATTRIBUTES( BOOST_MINSIZE )
     ~result_or_error() noexcept( std::is_nothrow_destructible<Result>::value && std::is_nothrow_destructible<Error>::value )
     {
@@ -115,14 +115,20 @@ public:
         /// instances have to be supported (and allow early function exist after
         /// only one instance is expected and found as failed).
         ///                                   (05.01.2016.) (Domagoj Saric)
-        /// \todo Move the fallible_result_sanitizer logic 'up here' to handle
-        /// (emsure at least one inspected instance on scope exit) both types.
+        /// \todo Move the fallible_result_sanitizer logic 'up here' (and find
+        /// a way to) handle (ensure at least one inspected instance on scope
+        /// exit) both types.
+        /// This is problematic because the user might be using other forms of
+        /// error handling or similar logic that would cause an early function
+        /// exit (before the saved result_or_errors are inspected). Ultimately,
+        /// this will probably have to be solved with (compiler specific) type
+        /// or function attributes (e.g. GCC's warn_unused_result).
         ///                                   (05.01.2016.) (Domagoj Saric)
         //BOOST_ASSERT_MSG( inspected(), "Ignored error return code." );
         if ( BOOST_LIKELY( succeeded_ ) ) result_.~Result();
         else                              error_ .~Error ();
     };
-    BOOST_OPTIMIZE_FOR_SIZE_END()
+BOOST_OPTIMIZE_FOR_SIZE_END()
 
     Error  const & error ()       { BOOST_ASSERT_MSG( !succeeded_, "Querying the error of a succeeded operation." ); return error_ ; }
     Result       & result()       { BOOST_ASSERT_MSG(  succeeded_, "Querying the result of a failed operation."   ); return result_; }
