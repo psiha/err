@@ -15,6 +15,7 @@ Similar libraries and/or discussions where the concept (or a similar one) was fi
 * https://github.com/ptal/std-expected-proposal
 * https://github.com/ptal/expected
 * https://github.com/adityaramesh/ccbase/blob/master/include/ccbase/error/expected.hpp
+* https://github.com/robertramey/safe_numerics/blob/master/include/checked_result.hpp
 * http://boost.2283326.n4.nabble.com/system-filesystem-v3-Question-about-error-code-arguments-td2630789i40.html
 * http://stackoverflow.com/questions/14923346/how-would-you-use-alexandrescus-expectedt-with-void-functions
 * https://svn.boost.org/trac/boost/wiki/BestPracticeHandbook#a8.DESIGN:Stronglyconsiderusingconstexprsemanticwrappertransporttypestoreturnstatesfromfunctions
