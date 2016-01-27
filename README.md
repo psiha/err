@@ -9,20 +9,23 @@ Unfortunately, the way it was finally implemented, std::error_code did not quite
 
 Enter _boost::err_: 'result objects' (as opposed to just result or error *codes*) which can be examined and branched upon (like with traditional result codes) or left unexamined to self-throw if they contain a failure result (i.e. unlike traditional result codes, they cannot be accidentally ignored). Thanks to latest C++ language features (such as r-value member function overloads) incorrect usage (that could otherwise for example lead to a result object destructor throwing during a stack-unwind) can be disallowed/detected at compile time.
 
-Discussions where the concept (or a similar one) was first concieved of and/or so far discussed:
-* http://boost.2283326.n4.nabble.com/system-filesystem-v3-Question-about-error-code-arguments-td2630789i40.html
+Similar libraries and/or discussions where the concept (or a similar one) was first concieved of and/or so far discussed:
+* https://github.com/ned14/boost.outcome
 * http://cpptips.com/fallible
 * https://github.com/ptal/std-expected-proposal
 * https://github.com/ptal/expected
 * https://github.com/adityaramesh/ccbase/blob/master/include/ccbase/error/expected.hpp
+* http://boost.2283326.n4.nabble.com/system-filesystem-v3-Question-about-error-code-arguments-td2630789i40.html
 * http://stackoverflow.com/questions/14923346/how-would-you-use-alexandrescus-expectedt-with-void-functions
 * https://svn.boost.org/trac/boost/wiki/BestPracticeHandbook#a8.DESIGN:Stronglyconsiderusingconstexprsemanticwrappertransporttypestoreturnstatesfromfunctions
 * http://2013.cppnow.org/session/non-allocating-stdfuturepromise
 
+Boost.Err specific Boost.Devel discussion(s):
+* http://boost.2283326.n4.nabble.com/err-RFC-td4681600.html
 
-##### Other psiha submodule requirements
+##### Other submodule requirements
 (to be added to the include path _before_ the offical Boost distribution):
- * config
+ * https://github.com/psiha/config
 
 ##### C++ In-The-Kernel Now!
-##### Copyright © 2015. Domagoj Saric. All rights reserved.
+##### Copyright Â© 2015 - 2016. Domagoj Saric. All rights reserved.
