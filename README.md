@@ -10,6 +10,7 @@ Unfortunately, the way it was finally implemented, std::error_code did not quite
 Enter _boost::err_: 'result objects' (as opposed to just result or error *codes*) which can be examined and branched upon (like with traditional result codes) or left unexamined to self-throw if they contain a failure result (i.e. unlike traditional result codes, they cannot be accidentally ignored). Thanks to latest C++ language features (such as r-value member function overloads) incorrect usage (that could otherwise for example lead to a result object destructor throwing during a stack-unwind) can be disallowed/detected at compile time.
 
 Similar libraries and/or discussions where the concept (or a similar one) was first concieved of and/or so far discussed:
+* https://github.com/viboes/std-make/blob/master/doc/proposal/expected/DXXXXR0_expected.md
 * https://github.com/ned14/boost.outcome
 * http://cpptips.com/fallible
 * https://github.com/ptal/std-expected-proposal
