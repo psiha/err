@@ -57,7 +57,7 @@ struct last_win32_error
     static value_type const no_error = 0;
 
     BOOST_ATTRIBUTES( BOOST_MINSIZE, BOOST_RESTRICTED_FUNCTION_L2, BOOST_EXCEPTIONLESS, BOOST_WARN_UNUSED_RESULT )
-    static value_type BOOST_CC_REG get() { return boost::detail::winapi::GetLastError(); }
+    static value_type BOOST_CC_REG get(                        ) { return   boost::detail::winapi  ::GetLastError(       ); }
     BOOST_ATTRIBUTES( BOOST_COLD, BOOST_EXCEPTIONLESS )
     static void       BOOST_CC_REG set( value_type const value ) { return /*boost::detail::winapi*/::SetLastError( value ); }
 
@@ -70,12 +70,19 @@ struct last_win32_error
     BOOST_ATTRIBUTES( BOOST_MINSIZE, BOOST_RESTRICTED_FUNCTION_L2, BOOST_EXCEPTIONLESS, BOOST_WARN_UNUSED_RESULT )
     static bool       BOOST_CC_REG is() { return is( value ); }
 
-    /// \todo interferes with result_or_error constructor SFINAE selection
-    /// for Result types constructible from value_type. Cleanup...
+    /// \todo Interferes with result_or_error constructor SFINAE selection
+    /// for Result types constructible from value_type if implicit. Cleanup...
     ///                                       (08.10.2015.) (Domagoj Saric)
-    //operator value_type () const { return get(); }
+    explicit
+    operator value_type() const { return value/*get()*/; }
 
-#if !defined( NDEBUG )
+    /// \note In order to support multiple/coexisting last_errno objects (i.e.
+    /// multiple fallible_results saved to result_or_error objects) we have to
+    /// add state (i.e. save the current errno on construction).
+    ///                                       (28.02.2016.) (Domagoj Saric)
+    value_type const value = last_errno::get();
+
+#if !defined( NDEBUG ) && 0 // disabled (no longer stateless)
     last_win32_error() noexcept { BOOST_ASSERT_MSG( instance_counter++ == 0, "More than one last_win32_error instance detected (the last one overrides the previous ones)." ); }
    ~last_win32_error() noexcept { BOOST_ASSERT_MSG( instance_counter-- <= 2, "More than one last_win32_error instance detected (the last one overrides the previous ones)." ); }
     last_win32_error( last_win32_error const  & ) = default; // delete;
@@ -84,18 +91,17 @@ struct last_win32_error
 #endif // NDEBUG
 }; // struct last_win32_error
 
-#if !defined( NDEBUG )
+#if !defined( NDEBUG ) && 0 // disabled (no longer stateless)
 BOOST_OVERRIDABLE_MEMBER_SYMBOL BOOST_THREAD_LOCAL_POD std::uint8_t last_win32_error::instance_counter( 0 );
 #endif // NDEBUG
 
 
 inline BOOST_ATTRIBUTES( BOOST_COLD )
-std::runtime_error BOOST_CC_REG make_exception( last_win32_error )
+std::runtime_error BOOST_CC_REG make_exception( last_win32_error const error )
 {
     using namespace boost::detail::winapi;
 
-    auto const error_code( last_win32_error::get() );
-    BOOST_ASSERT_MSG( error_code != last_win32_error::no_error, "Throwing on no error?" );
+    BOOST_ASSERT_MSG( error.value != last_win32_error::no_error, "Throwing on no error?" );
 
     char message[ 128 ];
     auto const message_length
@@ -103,7 +109,7 @@ std::runtime_error BOOST_CC_REG make_exception( last_win32_error )
         ::FormatMessageA
         (
             FORMAT_MESSAGE_FROM_SYSTEM_ | FORMAT_MESSAGE_IGNORE_INSERTS_,
-            nullptr, error_code, 0, message, _countof( message ), 0
+            nullptr, error.value, 0, message, _countof( message ), 0
         )
     );
     BOOST_ASSERT( message_length                           );

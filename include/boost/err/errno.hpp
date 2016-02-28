@@ -63,22 +63,32 @@ struct last_errno
     BOOST_ATTRIBUTES( BOOST_MINSIZE, BOOST_RESTRICTED_FUNCTION_L2, BOOST_EXCEPTIONLESS, BOOST_WARN_UNUSED_RESULT )
     static bool       BOOST_CC_REG is() { return is( value ); }
 
-    operator value_type () const { return get(); }
+    /// \todo Interferes with result_or_error constructor SFINAE selection
+    /// for Result types constructible from value_type if implicit. Cleanup...
+    ///                                       (27.02.2016.) (Domagoj Saric)
+    explicit
+    operator value_type () const { return value/*get()*/; }
 
-#ifndef NDEBUG
+    /// \note In order to support multiple/coexisting last_errno objects (i.e.
+    /// multiple fallible_results saved to result_or_error objects) we have to
+    /// add state (i.e. save the current errno on construction).
+    ///                                       (28.02.2016.) (Domagoj Saric)
+    value_type const value = last_errno::get();
+
+#if !defined( NDEBUG ) && 0 // disabled (no longer stateless)
     last_errno() noexcept { BOOST_ASSERT_MSG( ++instance_counter() == 1, "More than one last_errno instance detected (the last one overrides the previous ones)." ); }
    ~last_errno() noexcept { BOOST_ASSERT_MSG( --instance_counter() == 0, "More than one last_errno instance detected (the last one overrides the previous ones)." ); }
     std::uint8_t & instance_counter() { return detail::thread_singleton<std::uint8_t, last_errno>::instance(); }
     // debugging aid (for 'live' errno monitoring)
-    static /*thread_local*/ value_type const volatile & value; //...mrmlj...Apple still (OSX10.11/iOS9.1) hasn't implemented C++ TLS ...
+    static /*thread_local*/ value_type const volatile & current_value; //...mrmlj...Apple still (OSX10.11/iOS9.1) hasn't implemented C++ TLS ...
 #endif // NDEBUG
 }; // struct last_errno
 
-#ifndef NDEBUG
+#if !defined( NDEBUG ) && 0 // disabled (no longer stateless)
 /// \note GCC 4.9 from Android NDK 10e ICEs if BOOST_OVERRIDABLE_SYMBOL is
 /// put 'in the front' and Clang does not like it at the end...
 ///                                           (16.12.2015.) (Domagoj Saric)
-/*thread_local*/ last_errno::value_type const volatile & last_errno::value BOOST_OVERRIDABLE_MEMBER_SYMBOL = errno;
+/*thread_local*/ last_errno::value_type const volatile & last_errno::current_value  = errno;
 #endif // NDEBUG
 
 
@@ -87,11 +97,10 @@ struct last_errno
 #   pragma warning( disable : 4996 ) // "The POSIX name for this item is deprecated. Instead, use the ISO C++ conformant name."
 #endif // BOOST_MSVC
 inline BOOST_ATTRIBUTES( BOOST_COLD )
-std::runtime_error BOOST_CC_REG make_exception( last_errno )
+std::runtime_error BOOST_CC_REG make_exception( last_errno const error )
 {
-    auto const error_code( last_errno::get() );
-    BOOST_ASSERT_MSG( error_code != last_errno::no_error, "Throwing on no error?" );
-    return std::runtime_error( std::strerror( error_code ) );
+    BOOST_ASSERT_MSG( error.value != last_errno::no_error, "Throwing on no error?" );
+    return std::runtime_error( std::strerror( error.value ) );
 }
 #if defined( BOOST_MSVC )
 #   pragma warning( pop )
