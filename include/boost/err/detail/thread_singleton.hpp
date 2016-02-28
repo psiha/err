@@ -126,7 +126,7 @@ public:
             BOOST_ATTRIBUTES( BOOST_COLD )
             ~key_creator_t() noexcept { BOOST_VERIFY( pthread_key_delete( tls_key_ ) == 0 ); }
         }; // struct key_creator_t
-        static key_creator_t const key_creator;
+        static key_creator_t const key_creator; // assume a proper/conforming thread-safe local statics implementation
         BOOST_ASSERT( tls_key_ != static_cast<pthread_key_t>( -1 ) );
 
         auto * p_t( static_cast<wrapper *>( pthread_getspecific( tls_key_ ) ) );
