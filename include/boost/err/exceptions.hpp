@@ -87,6 +87,17 @@ namespace detail
     }
 } // namespace detail
 
+
+/// \note Reuse preexisting compiler-specific implementations.
+///                                           (28.02.2016.) (Domagoj Saric)
+#ifdef BOOST_MSVC
+__if_exists( std::_Xbad_alloc )
+{
+    template <> BOOST_ATTRIBUTES( BOOST_DOES_NOT_RETURN, BOOST_COLD )
+    void BOOST_CC_REG make_and_throw_exception<std::bad_alloc>() { std::_Xbad_alloc(); }
+}
+#endif // BOOST_MSVC
+
 BOOST_OPTIMIZE_FOR_SIZE_END()
 
 //------------------------------------------------------------------------------
