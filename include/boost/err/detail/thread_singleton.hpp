@@ -61,9 +61,10 @@ namespace detail
 ///
 ////////////////////////////////////////////////////////////////////////////////
 /// \internal \note
-/// GCC 4.9 and Clang 3.6 (from Android NDK 10e) fail if std::is_pod<T> (and
-/// std::is_trivially_constructible<T>) is asserted in 'cricular' situations
-/// where thread_singleton<T> is used within a T's inline member function.
+/// GCC 4.9 and Clang 3.6 (from Android NDK 10e) as well as MSVC14u1 fail if
+/// std::is_pod<T> (and std::is_trivially_constructible<T>) is asserted in
+/// 'cricular' situations where thread_singleton<T> is used within a T's inline
+/// member function.
 /// It is not a critical issue though since the compiler will complain if T
 /// does not work with BOOST_THREAD_LOCAL_POD in the first implementation and
 /// the second implementation supports non-PODs anyway.
@@ -76,11 +77,7 @@ struct thread_singleton
 {
     static T & instance()
     {
-    #if defined( __GNUC__ )
-        static_assert( std::is_trivially_destructible<T>::value, "" );
-    #else
-        static_assert( std::is_pod                   <T>::value, "" );
-    #endif // compiler
+        static_assert( std::/*is_pod*/is_trivially_destructible<T>::value, "Only PODs supported." );
         static BOOST_THREAD_LOCAL_POD T instance_;
         return instance_;
     }
