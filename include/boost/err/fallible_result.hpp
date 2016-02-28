@@ -140,10 +140,9 @@ template <class Result, class Error>
 class fallible_result
 {
 public:
-    // todo: variadic arguments
-    template <typename T>
-    fallible_result( T && BOOST_RESTRICTED_REF argument ) noexcept( std::is_nothrow_constructible<result_or_error<Result, Error>, T &&>::value )
-        : result_or_error_( std::forward<T>( argument ) )
+    template <typename ... T>
+    fallible_result( T && BOOST_RESTRICTED_REF ... argument ) noexcept( std::is_nothrow_constructible<result_or_error<Result, Error>, T &&...>::value )
+        : result_or_error_( std::forward<T>( argument )... )
     {
     #ifndef NDEBUG
         detail::fallible_result_sanitizer::add_instance();
@@ -157,11 +156,13 @@ public:
     #ifndef NDEBUG
         detail::fallible_result_sanitizer::add_instance();
     #endif // NDEBUG
-        BOOST_ASSUME( !result_or_error_.inspected_ );
+        BOOST_ASSUME( other.result_or_error_.inspected_ == true  );
+        BOOST_ASSUME( this->result_or_error_.inspected_ == false );
     }
 
     fallible_result( fallible_result const & ) = delete;
 
+    BOOST_ATTRIBUTES( BOOST_MINSIZE )
     ~fallible_result() noexcept( false )
     {
     #ifndef NDEBUG
@@ -171,17 +172,18 @@ public:
         BOOST_ASSUME( result_or_error_.inspected_ );
     }
 
-    result_or_error<Result, Error> && as_result_or_error() && noexcept( true ) { std::move( *this ).ignore_failure(); return std::move( result_or_error_ ); }
+    result_or_error<Result, Error> && as_result_or_error() && noexcept { BOOST_ASSUME( !result_or_error_.inspected_ ); std::move( *this ).ignore_failure(); return std::move( result_or_error_ ); }
+    result_or_error<Result, Error> && operator()        () && noexcept { return std::move( *this ).as_result_or_error(); }
 
-    operator result_or_error<Result, Error> && () && noexcept( true  ) { return std::move( *this ).as_result_or_error(); }
-    operator Result                         && () && noexcept( false ) { return std::move( result() ); }
+    operator result_or_error<Result, Error> && () && noexcept { return std::move( *this ).as_result_or_error(); }
+    operator Result                         && () &&          { return std::move( result() ); }
 
                                                          Result && operator *  () && { return  result(); }
     BOOST_ATTRIBUTES( BOOST_RESTRICTED_FUNCTION_RETURN ) Result *  operator -> () && { return &result(); }
 
     explicit operator bool() && noexcept { return static_cast<bool>( result_or_error_ ); }
 
-    void ignore_failure() && noexcept { result_or_error_.inspected_ = true; }
+    void ignore_failure() BOOST_RESTRICTED_THIS && noexcept { result_or_error_.inspected_ = true; }
 
 private:
     Result && result()
@@ -225,9 +227,9 @@ public:
     using result = result_or_error<void, Error>;
 
 public:
-    template <typename T>
-    fallible_result( T && BOOST_RESTRICTED_REF argument ) noexcept( std::is_nothrow_constructible<result, T &&>::value )
-        : void_or_error_( std::forward<T>( argument ) )
+    template <typename ... T>
+    fallible_result( T && BOOST_RESTRICTED_REF ... argument ) noexcept( std::is_nothrow_constructible<result, T && ...>::value )
+        : void_or_error_( std::forward<T>( argument )... )
     {
         BOOST_ASSERT_MSG
         (
@@ -260,6 +262,8 @@ public:
         BOOST_ASSUME( void_or_error_.inspected_ );
     }
     BOOST_OPTIMIZE_FOR_SIZE_END()
+
+    result && operator()() && noexcept { return std::move( *this ); }
 
     operator result && () && noexcept { static_cast<fallible_result &&>( *this ).ignore_failure(); return std::move( void_or_error_ ); }
 

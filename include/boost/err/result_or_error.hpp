@@ -76,6 +76,12 @@ public:
     /// emplacement/eliminate an intermediate move constructor call (as it can
     /// actually be nontrivial, e.g. classes w/ SBO).
     ///                                       (18.05.2015.) (Domagoj Saric)
+    /// \todo Consider adding a runtime check to the 'successful'/Result
+    /// constructor for Results convertible to bool (assuming this constitutes a
+    /// 'validity' check) i.e. don't assume succeeded_ = true if the 'from
+    /// result' constructor is invoked.
+    ///                                       (17.02.2016.) (Domagoj Saric)
+    // todo: variadic arguments
     template <typename Source> result_or_error( Source && BOOST_RESTRICTED_REF result, typename std::enable_if<std::is_constructible<Result, Source &&>::value>::type const * = nullptr ) noexcept( std::is_nothrow_constructible<Result, Source &&>::value ) : succeeded_( true  ), inspected_( false ), result_( std::forward<Source>( result ) ) {}
     template <typename Source> result_or_error( Source && BOOST_RESTRICTED_REF error , typename std::enable_if<std::is_constructible<Error , Source &&>::value>::type const * = nullptr ) noexcept( std::is_nothrow_constructible<Error , Source &&>::value ) : succeeded_( false ), inspected_( false ), error_ ( std::forward<Source>( error  ) ) {}
 
@@ -92,17 +98,18 @@ public:
         ///                                   (18.05.2015.) (Domagoj Saric)
         if ( BOOST_LIKELY( succeeded_ ) )
         {
-            auto const ptr( new ( &result_ ) Result( std::move( other.result_ ) ) );
-            BOOST_ASSUME( ptr );
+            auto * __restrict const ptr( new ( &result_ ) Result( std::move( other.result_ ) ) );
+            BOOST_ASSUME( ptr              );
             BOOST_ASSUME( other.succeeded_ );
         }
         else
         {
-            auto const ptr( new ( &error_  ) Error ( std::move( other.error_  ) ) );
-            BOOST_ASSUME( ptr );
+            auto * __restrict const ptr( new ( &error_  ) Error ( std::move( other.error_  ) ) );
+            BOOST_ASSUME( ptr               );
             BOOST_ASSUME( !other.succeeded_ );
         }
-        BOOST_ASSUME( other.inspected_ );
+        BOOST_ASSUME( this->inspected_ == false );
+        BOOST_ASSUME( other.inspected_ == true  );
     }
 
     result_or_error( result_or_error const & ) = delete;
@@ -130,24 +137,24 @@ BOOST_OPTIMIZE_FOR_SIZE_BEGIN()
     };
 BOOST_OPTIMIZE_FOR_SIZE_END()
 
-    Error  const & error ()       { BOOST_ASSERT_MSG( !succeeded_, "Querying the error of a succeeded operation." ); return error_ ; }
-    Result       & result()       { BOOST_ASSERT_MSG(  succeeded_, "Querying the result of a failed operation."   ); return result_; }
-    Result const & result() const { return const_cast<Result &>( *this ).result(); }
+    Error  const & error () const noexcept { BOOST_ASSERT_MSG( !succeeded_, "Querying the error of a succeeded operation." ); return error_ ; }
+    Result       & result()       noexcept { BOOST_ASSERT_MSG(  succeeded_, "Querying the result of a failed operation."   ); return result_; }
+    Result const & result() const noexcept { return const_cast<result_or_error &>( *this ).result(); }
 
-                                                         Result       && operator *  ()       && { return  result(); }
-                                                         Result       &  operator *  ()       &  { return  result(); }
-                                                         Result const &  operator *  () const &  { return  result(); }
-    BOOST_ATTRIBUTES( BOOST_RESTRICTED_FUNCTION_RETURN ) Result       *  operator -> ()          { return &result(); }
-    BOOST_ATTRIBUTES( BOOST_RESTRICTED_FUNCTION_RETURN ) Result const *  operator -> () const    { return &result(); }
+                                                         Result       && operator *  ()       && noexcept { return  result(); }
+                                                         Result       &  operator *  ()       &  noexcept { return  result(); }
+                                                         Result const &  operator *  () const &  noexcept { return  result(); }
+    BOOST_ATTRIBUTES( BOOST_RESTRICTED_FUNCTION_RETURN ) Result       *  operator -> ()          noexcept { return &result(); }
+    BOOST_ATTRIBUTES( BOOST_RESTRICTED_FUNCTION_RETURN ) Result const *  operator -> () const    noexcept { return &result(); }
 
-                      bool inspected() const noexcept {                    return BOOST_LIKELY( inspected_ ); }
-                      bool succeeded() const noexcept { inspected_ = true; return BOOST_LIKELY( succeeded_ ); }
-    explicit operator bool          () const noexcept {                    return succeeded()               ; }
+                      bool inspected() BOOST_RESTRICTED_THIS const noexcept {                    return BOOST_LIKELY( inspected_ ); }
+                      bool succeeded() BOOST_RESTRICTED_THIS const noexcept { inspected_ = true; return BOOST_LIKELY( succeeded_ ); }
+    explicit operator bool          () BOOST_RESTRICTED_THIS const noexcept {                    return succeeded()               ; }
 
 BOOST_OPTIMIZE_FOR_SIZE_BEGIN()
 #ifndef BOOST_NO_EXCEPTIONS
     BOOST_ATTRIBUTES( BOOST_MINSIZE )
-    void BOOST_CC_REG throw_if_error()
+    void BOOST_CC_REG throw_if_error() BOOST_RESTRICTED_THIS
     {
         //BOOST_ASSERT( !std::uncaught_exception() );
         if ( succeeded() )
@@ -160,7 +167,7 @@ BOOST_OPTIMIZE_FOR_SIZE_BEGIN()
         throw_error();
     }
     BOOST_ATTRIBUTES( BOOST_MINSIZE )
-    void BOOST_CC_REG throw_if_uninspected_error()
+    void BOOST_CC_REG throw_if_uninspected_error() BOOST_RESTRICTED_THIS
     {
         if ( !inspected() )
         {
@@ -171,7 +178,7 @@ BOOST_OPTIMIZE_FOR_SIZE_BEGIN()
     }
 
     BOOST_ATTRIBUTES( BOOST_DOES_NOT_RETURN, BOOST_COLD )
-    void BOOST_CC_REG throw_error() noexcept( false )
+    void BOOST_CC_REG throw_error() BOOST_RESTRICTED_THIS
     {
         BOOST_ASSERT( !succeeded() );
         //BOOST_ASSERT( !std::uncaught_exception() );
@@ -180,7 +187,7 @@ BOOST_OPTIMIZE_FOR_SIZE_BEGIN()
 #endif // BOOST_NO_EXCEPTIONS
 
     BOOST_ATTRIBUTES( BOOST_COLD )
-    std::exception_ptr BOOST_CC_REG make_exception_ptr()
+    std::exception_ptr BOOST_CC_REG make_exception_ptr() noexcept
     {
         // http://en.cppreference.com/w/cpp/error/exception_ptr
         BOOST_ASSERT( !succeeded() );
@@ -230,6 +237,8 @@ public:
         inspected_( false                      )
     {
         other.inspected_ = true;
+        BOOST_ASSUME( this->inspected_ == false );
+        BOOST_ASSUME( other.inspected_ == true  );
     }
 
     result_or_error( result_or_error const & ) = delete;
@@ -237,16 +246,15 @@ public:
 #if 0 // disabled
     ~result_or_error() noexcept { BOOST_ASSERT_MSG( inspected(), "Ignored error return code." ); };
 #endif
+                                                         Result       && operator *  ()       && noexcept { return  result(); }
+                                                         Result       &  operator *  ()       &  noexcept { return  result(); }
+                                                         Result const &  operator *  () const &  noexcept { return  result(); }
+    BOOST_ATTRIBUTES( BOOST_RESTRICTED_FUNCTION_RETURN ) Result       *  operator -> ()          noexcept { return &result(); }
+    BOOST_ATTRIBUTES( BOOST_RESTRICTED_FUNCTION_RETURN ) Result const *  operator -> () const    noexcept { return &result(); }
 
-                                                         Result       && operator *  ()       && { return  result(); }
-                                                         Result       &  operator *  ()       &  { return  result(); }
-                                                         Result const &  operator *  () const &  { return  result(); }
-    BOOST_ATTRIBUTES( BOOST_RESTRICTED_FUNCTION_RETURN ) Result       *  operator -> ()          { return &result(); }
-    BOOST_ATTRIBUTES( BOOST_RESTRICTED_FUNCTION_RETURN ) Result const *  operator -> () const    { return &result(); }
-
-    Error          error ()       noexcept { BOOST_ASSERT_MSG( inspected() && !*this, "Querying the error of a (possibly) succeeded operation." ); return Error(); }
+    Error          error () const noexcept { BOOST_ASSERT_MSG( inspected() && !*this, "Querying the error of a (possibly) succeeded operation." ); return Error(); }
     Result       & result()       noexcept { BOOST_ASSERT_MSG( inspected() &&  *this, "Querying the result of a (possibly) failed operation."   ); return result_; }
-    Result const & result() const noexcept { return const_cast<Result &>( *this ).result(); }
+    Result const & result() const noexcept { return const_cast<result_or_error &>( *this ).result(); }
 
                       bool inspected() const noexcept {                    return BOOST_LIKELY(                    inspected_ ); }
                       bool succeeded() const noexcept { inspected_ = true; return BOOST_LIKELY( static_cast<bool>( result_ )  ); }
@@ -340,10 +348,10 @@ public:
             error_.~Error();
     };
 
-    Error const & error() noexcept { BOOST_ASSERT_MSG( inspected() && !*this, "Querying the error of a (possibly) succeeded operation." ); return error_; }
+    Error const & error() const noexcept { BOOST_ASSERT_MSG( inspected() && !*this, "Querying the error of a (possibly) succeeded operation." ); return error_; }
 
                       bool inspected() const noexcept {                    return BOOST_LIKELY( inspected_ ); }
-                      bool succeeded() const noexcept { inspected_ = true; return BOOST_LIKELY( succeeded_ ); }
+                      bool succeeded() const noexcept { auto & __restrict inspected( inspected_ ); inspected = true; return BOOST_LIKELY( succeeded_ ); }
     explicit operator bool          () const noexcept {                    return succeeded()               ; }
 
 BOOST_OPTIMIZE_FOR_SIZE_BEGIN()
