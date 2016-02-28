@@ -80,7 +80,7 @@ struct last_win32_error
     /// multiple fallible_results saved to result_or_error objects) we have to
     /// add state (i.e. save the current errno on construction).
     ///                                       (28.02.2016.) (Domagoj Saric)
-    value_type const value = last_errno::get();
+    value_type const value = last_win32_error::get();
 
 #if !defined( NDEBUG ) && 0 // disabled (no longer stateless)
     last_win32_error() noexcept { BOOST_ASSERT_MSG( instance_counter++ == 0, "More than one last_win32_error instance detected (the last one overrides the previous ones)." ); }
