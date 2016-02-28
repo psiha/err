@@ -30,7 +30,7 @@ Similar libraries and/or discussions where the concept (or a similar one) was fi
 
 ##### Other submodule requirements
 (to be added to the include path _before_ the offical Boost distribution):
- * https://github.com/psiha/config
+ * https://github.com/psiha/config (develop)
 
 ##### C++ In-The-Kernel Now!
 ##### Copyright © 2015 - 2016. Domagoj Saric. All rights reserved.
