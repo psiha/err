@@ -56,7 +56,7 @@ struct last_win32_error
 
     static value_type const no_error = 0;
 
-    BOOST_ATTRIBUTES( BOOST_MINSIZE, BOOST_RESTRICTED_FUNCTION_L2, BOOST_EXCEPTIONLESS, BOOST_WARN_UNUSED_RESULT )
+    BOOST_ATTRIBUTES( BOOST_COLD, BOOST_EXCEPTIONLESS, BOOST_RESTRICTED_FUNCTION_L2, BOOST_WARN_UNUSED_RESULT )
     static value_type BOOST_CC_REG get(                        ) { return   boost::detail::winapi  ::GetLastError(       ); }
     BOOST_ATTRIBUTES( BOOST_COLD, BOOST_EXCEPTIONLESS )
     static void       BOOST_CC_REG set( value_type const value ) { return /*boost::detail::winapi*/::SetLastError( value ); }

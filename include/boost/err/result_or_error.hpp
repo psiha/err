@@ -252,6 +252,7 @@ public:
     BOOST_ATTRIBUTES( BOOST_RESTRICTED_FUNCTION_RETURN ) Result       *  operator -> ()          noexcept { return &result(); }
     BOOST_ATTRIBUTES( BOOST_RESTRICTED_FUNCTION_RETURN ) Result const *  operator -> () const    noexcept { return &result(); }
 
+    BOOST_ATTRIBUTES( BOOST_COLD )
     Error          error () const noexcept { BOOST_ASSERT_MSG( inspected() && !*this, "Querying the error of a (possibly) succeeded operation." ); return Error(); }
     Result       & result()       noexcept { BOOST_ASSERT_MSG( inspected() &&  *this, "Querying the result of a (possibly) failed operation."   ); return result_; }
     Result const & result() const noexcept { return const_cast<result_or_error &>( *this ).result(); }
@@ -348,6 +349,7 @@ public:
             error_.~Error();
     };
 
+    BOOST_ATTRIBUTES( BOOST_COLD )
     Error const & error() const noexcept { BOOST_ASSERT_MSG( inspected() && !*this, "Querying the error of a (possibly) succeeded operation." ); return error_; }
 
                       bool inspected() const noexcept {                    return BOOST_LIKELY( inspected_ ); }
