@@ -82,8 +82,8 @@ public:
     /// result' constructor is invoked.
     ///                                       (17.02.2016.) (Domagoj Saric)
     // todo: variadic arguments
-    template <typename Source> result_or_error( Source && BOOST_RESTRICTED_REF result, typename std::enable_if<std::is_constructible<Result, Source &&>::value>::type const * = nullptr ) noexcept( std::is_nothrow_constructible<Result, Source &&>::value ) : succeeded_( true  ), inspected_( false ), result_( std::forward<Source>( result ) ) {}
-    template <typename Source> result_or_error( Source && BOOST_RESTRICTED_REF error , typename std::enable_if<std::is_constructible<Error , Source &&>::value>::type const * = nullptr ) noexcept( std::is_nothrow_constructible<Error , Source &&>::value ) : succeeded_( false ), inspected_( false ), error_ ( std::forward<Source>( error  ) ) {}
+    template <typename Source>                                result_or_error( Source && BOOST_RESTRICTED_REF result, typename std::enable_if<std::is_constructible<Result, Source &&>::value>::type const * = nullptr ) noexcept( std::is_nothrow_constructible<Result, Source &&>::value ) : succeeded_( true  ), inspected_( false ), result_( std::forward<Source>( result ) ) {}
+    template <typename Source> BOOST_ATTRIBUTES( BOOST_COLD ) result_or_error( Source && BOOST_RESTRICTED_REF error , typename std::enable_if<std::is_constructible<Error , Source &&>::value>::type const * = nullptr ) noexcept( std::is_nothrow_constructible<Error , Source &&>::value ) : succeeded_( false ), inspected_( false ), error_ ( std::forward<Source>( error  ) ) {}
 
     result_or_error( result_or_error && BOOST_RESTRICTED_REF other )
         noexcept
@@ -323,6 +323,7 @@ class result_or_error<void, Error, void>
 {
 public:
     template <typename Source>
+    BOOST_ATTRIBUTES( BOOST_COLD )
     result_or_error( Source && BOOST_RESTRICTED_REF error, typename std::enable_if<!std::is_same<Source, fallible_result<void, Error>>::value>::type const * = nullptr )
         noexcept( std::is_nothrow_constructible<Error, Source &&>::value )
         : error_( std::forward<Source>( error ) ), succeeded_( false ), inspected_( false ) {}

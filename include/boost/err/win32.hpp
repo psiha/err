@@ -57,24 +57,24 @@ struct last_win32_error
     static value_type const no_error = 0;
 
     BOOST_ATTRIBUTES( BOOST_COLD, BOOST_EXCEPTIONLESS, BOOST_RESTRICTED_FUNCTION_L2, BOOST_WARN_UNUSED_RESULT )
-    static value_type BOOST_CC_REG get(                        ) { return   boost::detail::winapi  ::GetLastError(       ); }
+    static value_type BOOST_CC_REG get(                        ) noexcept { return   boost::detail::winapi  ::GetLastError(       ); }
     BOOST_ATTRIBUTES( BOOST_COLD, BOOST_EXCEPTIONLESS )
-    static void       BOOST_CC_REG set( value_type const value ) { return /*boost::detail::winapi*/::SetLastError( value ); }
+    static void       BOOST_CC_REG set( value_type const value ) noexcept { return /*boost::detail::winapi*/::SetLastError( value ); }
 
     BOOST_ATTRIBUTES( BOOST_MINSIZE, BOOST_EXCEPTIONLESS )
-    static void       BOOST_CC_REG clear() { return set( ERROR_SUCCESS ); }
+    static void       BOOST_CC_REG clear() noexcept { return set( ERROR_SUCCESS ); }
 
     BOOST_ATTRIBUTES( BOOST_MINSIZE, BOOST_RESTRICTED_FUNCTION_L2, BOOST_EXCEPTIONLESS, BOOST_WARN_UNUSED_RESULT )
-    static bool       BOOST_CC_REG is( value_type const value ) { return get() == value; }
+    static bool       BOOST_CC_REG is( value_type const value ) noexcept { return get() == value; }
     template <value_type value>
     BOOST_ATTRIBUTES( BOOST_MINSIZE, BOOST_RESTRICTED_FUNCTION_L2, BOOST_EXCEPTIONLESS, BOOST_WARN_UNUSED_RESULT )
-    static bool       BOOST_CC_REG is() { return is( value ); }
+    static bool       BOOST_CC_REG is() noexcept { return is( value ); }
 
     /// \todo Interferes with result_or_error constructor SFINAE selection
     /// for Result types constructible from value_type if implicit. Cleanup...
     ///                                       (08.10.2015.) (Domagoj Saric)
     explicit
-    operator value_type() const { return value/*get()*/; }
+    operator value_type() const noexcept { return value/*get()*/; }
 
     /// \note In order to support multiple/coexisting last_errno objects (i.e.
     /// multiple fallible_results saved to result_or_error objects) we have to
