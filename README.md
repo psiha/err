@@ -24,6 +24,7 @@ Similar libraries and/or discussions where the concept (or a similar one) was fi
 * http://boost.2283326.n4.nabble.com/system-filesystem-v3-Question-about-error-code-arguments-td2630789i40.html
 * http://stackoverflow.com/questions/14923346/how-would-you-use-alexandrescus-expectedt-with-void-functions
 * https://svn.boost.org/trac/boost/wiki/BestPracticeHandbook#a8.DESIGN:Stronglyconsiderusingconstexprsemanticwrappertransporttypestoreturnstatesfromfunctions
+* [About expected\<T, E, Traits=error_traits\<E\>\> @ isocpp](https://groups.google.com/a/isocpp.org/forum/#!topic/std-proposals/eM9Fs9vdzU4)
 * http://2013.cppnow.org/session/non-allocating-stdfuturepromise
 * ["Survey of Error Handling" by N. Bolas](https://11080372623597421729.googlegroups.com/attach/a8bf61b2beb10bec/Survey%20of%20Error%20Handling.html?part=0.1&view=1&vt=ANaJVrGXbT5TGHEPTZWW_iduAUmJBNCyB6yvlV3L0LQk5eZ3dsCSBPSx0hql8fZ3MMCGjw-xBx8bIt6e4-4A0q_fE1U_7jREulA6RbE2Roh4sHOov8TUMtw)
 * [Handling Disappointment in C++](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2015/p0157r0.html)
