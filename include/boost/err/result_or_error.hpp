@@ -115,7 +115,7 @@ public:
     result_or_error( result_or_error const & ) = delete;
 
 BOOST_OPTIMIZE_FOR_SIZE_BEGIN()
-    [[BOOST_MINSIZE]]
+    BOOST_ATTRIBUTES( BOOST_MINSIZE )
     ~result_or_error() noexcept( std::is_nothrow_destructible<Result>::value && std::is_nothrow_destructible<Error>::value )
     {
         /// \note This assertion is too naive: multiple result_or_error
@@ -185,7 +185,7 @@ BOOST_OPTIMIZE_FOR_SIZE_BEGIN()
         BOOST_ASSUME( inspected_ );
     }
 
-    [[noreturn, BOOST_COLD]]
+    [[noreturn]] BOOST_ATTRIBUTES( BOOST_COLD )
     void BOOST_CC_REG throw_error() BOOST_RESTRICTED_THIS
     {
         BOOST_ASSERT( !succeeded() );
@@ -194,7 +194,7 @@ BOOST_OPTIMIZE_FOR_SIZE_BEGIN()
     }
 #endif // BOOST_NO_EXCEPTIONS
 
-    [[BOOST_COLD]]
+    BOOST_ATTRIBUTES( BOOST_COLD )
     std::exception_ptr BOOST_CC_REG make_exception_ptr() noexcept
     {
         // http://en.cppreference.com/w/cpp/error/exception_ptr
@@ -260,7 +260,7 @@ public:
     Result       &  operator -> ()          noexcept { return            result()  ; }
     Result const &  operator -> () const    noexcept { return            result()  ; }
 
-    [[BOOST_COLD]]
+    BOOST_ATTRIBUTES( BOOST_COLD )
     Error          error () const noexcept { BOOST_ASSERT_MSG( inspected() && !*this, "Querying the error of a (possibly) succeeded operation." ); return Error(); }
     Result       & result()       noexcept { BOOST_ASSERT_MSG( inspected() &&  *this, "Querying the result of a (possibly) failed operation."   ); return result_; }
     Result const & result() const noexcept { return const_cast<result_or_error &>( *this ).result(); }
@@ -293,7 +293,7 @@ public:
         BOOST_ASSUME( inspected_ );
     }
 
-    [[BOOST_COLD]]
+    BOOST_ATTRIBUTES( BOOST_COLD )
     void throw_error()
     {
         BOOST_ASSERT( !succeeded() );
@@ -302,7 +302,7 @@ public:
     }
 #endif // BOOST_NO_EXCEPTIONS
 
-    [[BOOST_COLD]]
+    BOOST_ATTRIBUTES( BOOST_COLD )
     std::exception_ptr BOOST_CC_REG make_exception_ptr()
     {
         BOOST_ASSERT( !succeeded() );
@@ -349,13 +349,12 @@ public:
             BOOST_ASSUME( ptr );
             BOOST_ASSUME( !other.succeeded_ );
         }
-        other.succeeded_ = true;
         other.inspected_ = true;
     }
 
     result_or_error( result_or_error const & ) = delete;
 
-    [[BOOST_MINSIZE]]
+    BOOST_ATTRIBUTES( BOOST_MINSIZE )
     ~result_or_error() noexcept( std::is_nothrow_destructible<Error>::value )
     {
         BOOST_ASSERT_MSG( inspected(), "Ignored (error) return value." );
@@ -363,7 +362,7 @@ public:
             error_.~Error();
     };
 
-    [[BOOST_COLD]]
+    BOOST_ATTRIBUTES( BOOST_COLD )
     Error const & error() const noexcept { BOOST_ASSERT_MSG( inspected() && !*this, "Querying the error of a (possibly) succeeded operation." ); return error_; }
 
                       bool inspected() const noexcept {                    return BOOST_LIKELY( inspected_ ); }
@@ -372,7 +371,7 @@ public:
 
 BOOST_OPTIMIZE_FOR_SIZE_BEGIN()
 #ifndef BOOST_NO_EXCEPTIONS //...mrmlj...kill this duplication...
-    [[BOOST_MINSIZE]]
+    BOOST_ATTRIBUTES( BOOST_MINSIZE )
     void throw_if_error()
     {
         BOOST_ASSERT( !std::uncaught_exception() );
@@ -392,7 +391,7 @@ BOOST_OPTIMIZE_FOR_SIZE_BEGIN()
         BOOST_ASSUME( inspected_ );
     }
 
-    [[noreturn, BOOST_COLD]]
+    [[noreturn]] BOOST_ATTRIBUTES( BOOST_COLD )
     void throw_error() noexcept( false )
     {
         BOOST_ASSERT( !succeeded() );
@@ -401,7 +400,7 @@ BOOST_OPTIMIZE_FOR_SIZE_BEGIN()
     }
 #endif // BOOST_NO_EXCEPTIONS
 
-    [[BOOST_COLD]]
+    BOOST_ATTRIBUTES( BOOST_COLD )
     std::exception_ptr BOOST_CC_REG make_exception_ptr()
     {
         BOOST_ASSERT( !succeeded() );

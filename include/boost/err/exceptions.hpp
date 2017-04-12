@@ -55,31 +55,31 @@ Error && make_exception( Error && error ) { return std::forward<Error>( error );
 
 
 template <class Exception>
-[[noreturn, BOOST_COLD]]
+[[noreturn]] BOOST_ATTRIBUTES( BOOST_COLD )
 typename std::enable_if<!std::is_fundamental<Exception>::value>::type
 BOOST_CC_REG throw_exception( Exception && exception ) { BOOST_THROW_EXCEPTION( std::forward<Exception>( exception ) ); }
 
 template <typename Exception>
-[[noreturn, BOOST_COLD]]
+[[noreturn]] BOOST_ATTRIBUTES( BOOST_COLD )
 typename std::enable_if<std::is_fundamental<Exception>::value>::type
 BOOST_CC_REG throw_exception( Exception const exception ) { BOOST_THROW_EXCEPTION( exception ); }
 
 template <typename Error>
-[[noreturn, BOOST_COLD]]
+[[noreturn]] BOOST_ATTRIBUTES( BOOST_COLD )
 void BOOST_CC_REG make_and_throw_exception( Error && error ) { throw_exception( std::move( make_exception( std::forward<Error>( error ) ) ) ); }
 
 template <typename Error>
-[[noreturn, BOOST_COLD]]
+[[noreturn]] BOOST_ATTRIBUTES( BOOST_COLD )
 void BOOST_CC_REG make_and_throw_exception() { make_and_throw_exception<Error>( Error() ); }
 
 template <typename Error>
-[[BOOST_COLD]]
+BOOST_ATTRIBUTES( BOOST_COLD )
 std::exception_ptr BOOST_CC_REG make_exception_ptr( Error && error ) { return std::make_exception_ptr( make_exception( std::forward<Error>( error ) ) ); }
 
 namespace detail
 {
     template <typename Error>
-    [[BOOST_COLD]]
+    BOOST_ATTRIBUTES( BOOST_COLD )
     void BOOST_CC_REG conditional_throw( Error && error )
     {
         if ( BOOST_LIKELY( !std::uncaught_exception() ) )
@@ -93,7 +93,7 @@ namespace detail
 #ifdef BOOST_MSVC
 __if_exists( std::_Xbad_alloc )
 {
-    template <> [[noreturn, BOOST_COLD]]
+    template <> [[noreturn]] BOOST_ATTRIBUTES( BOOST_COLD )
     inline void BOOST_CC_REG make_and_throw_exception<std::bad_alloc>() { std::_Xbad_alloc(); }
 }
 #endif // BOOST_MSVC
