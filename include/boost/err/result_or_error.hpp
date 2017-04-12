@@ -157,7 +157,7 @@ BOOST_OPTIMIZE_FOR_SIZE_END()
                       bool succeeded() BOOST_RESTRICTED_THIS const noexcept { inspected_ = true; return BOOST_LIKELY( succeeded_ ); }
     explicit operator bool          () BOOST_RESTRICTED_THIS const noexcept {                    return succeeded()               ; }
 
-    Result && assume_succeeded() && noexcept { BOOST_ASSUME( succeeded() ); return std::move( result() ); }
+    Result && assume_succeeded() && noexcept { BOOST_VERIFY( succeeded() ); return std::move( result() ); }
 
 BOOST_OPTIMIZE_FOR_SIZE_BEGIN()
 #ifndef BOOST_NO_EXCEPTIONS
@@ -269,7 +269,7 @@ public:
                       bool succeeded() const noexcept { inspected_ = true; return BOOST_LIKELY( static_cast<bool>( result_ )  ); }
     explicit operator bool          () const noexcept {                    return succeeded()                                  ; }
 
-    Result && assume_succeeded() && noexcept { BOOST_ASSUME( succeeded() ); return std::move( result() ); }
+    Result && assume_succeeded() && noexcept { BOOST_VERIFY( succeeded() ); return std::move( result() ); }
 
     BOOST_OPTIMIZE_FOR_SIZE_BEGIN()
 #ifndef BOOST_NO_EXCEPTIONS //...mrmlj...kill this duplication with the unspecialized template...
