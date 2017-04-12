@@ -3,7 +3,7 @@
 /// \file result_or_error.hpp
 /// -------------------------
 ///
-/// Copyright (c) Domagoj Saric 2015 - 2016.
+/// Copyright (c) Domagoj Saric 2015 - 2017.
 ///
 /// Use, modification and distribution is subject to the
 /// Boost Software License, Version 1.0.
@@ -21,7 +21,7 @@
 #include "exceptions.hpp"
 
 #include <boost/assert.hpp>
-#include <boost/config.hpp>
+#include <boost/config_ex.hpp>
 
 #include <type_traits>
 #include <utility>
@@ -34,14 +34,14 @@ namespace err
 //------------------------------------------------------------------------------
 
 struct no_err_t {};
-static no_err_t const no_err    = {};
-static no_err_t const success   = {};
-static no_err_t const succeeded = {};
+static no_err_t constexpr no_err    = {};
+static no_err_t constexpr success   = {};
+static no_err_t constexpr succeeded = {};
 
 struct an_err_t {};
-static an_err_t const an_err  = {};
-static an_err_t const failure = {};
-static an_err_t const failed  = {};
+static an_err_t constexpr an_err  = {};
+static an_err_t constexpr failure = {};
+static an_err_t constexpr failed  = {};
 
 
 template <class Result, class Error>
@@ -69,7 +69,7 @@ template <class Result, class Error>
 class fallible_result;
 
 template <class Result, class Error, typename = void>
-class result_or_error
+class [[nodiscard]] result_or_error
 {
 public:
     /// \note Be liberal with the constructor argument type in order to allow
@@ -93,7 +93,7 @@ public:
         )
         : succeeded_( other.succeeded() ), inspected_( false )
     {
-        /// \note MSVC14 RC still cannot 'see through' placement new and inserts
+        /// \note MSVC14 still cannot 'see through' placement new and inserts
         /// braindead branching code so we help it with assume statements.
         ///                                   (18.05.2015.) (Domagoj Saric)
         if ( BOOST_LIKELY( succeeded_ ) )
@@ -115,7 +115,7 @@ public:
     result_or_error( result_or_error const & ) = delete;
 
 BOOST_OPTIMIZE_FOR_SIZE_BEGIN()
-    BOOST_ATTRIBUTES( BOOST_MINSIZE )
+    [[BOOST_MINSIZE]]
     ~result_or_error() noexcept( std::is_nothrow_destructible<Result>::value && std::is_nothrow_destructible<Error>::value )
     {
         /// \note This assertion is too naive: multiple result_or_error
@@ -137,19 +137,27 @@ BOOST_OPTIMIZE_FOR_SIZE_BEGIN()
     };
 BOOST_OPTIMIZE_FOR_SIZE_END()
 
-    Error  const & error () const noexcept { BOOST_ASSERT_MSG( !succeeded_, "Querying the error of a succeeded operation." ); return error_ ; }
-    Result       & result()       noexcept { BOOST_ASSERT_MSG(  succeeded_, "Querying the result of a failed operation."   ); return result_; }
+    Error  const & error () const noexcept { BOOST_ASSERT_MSG( inspected(), "Using a result_or_error w/o prior inspection" ); BOOST_ASSERT_MSG( !succeeded_, "Querying the error of a succeeded operation." ); return error_ ; }
+    Result       & result()       noexcept { BOOST_ASSERT_MSG( inspected(), "Using a result_or_error w/o prior inspection" ); BOOST_ASSERT_MSG(  succeeded_, "Querying the result of a failed operation."   ); return result_; }
     Result const & result() const noexcept { return const_cast<result_or_error &>( *this ).result(); }
 
-                                                         Result       && operator *  ()       && noexcept { return  result(); }
-                                                         Result       &  operator *  ()       &  noexcept { return  result(); }
-                                                         Result const &  operator *  () const &  noexcept { return  result(); }
-    BOOST_ATTRIBUTES( BOOST_RESTRICTED_FUNCTION_RETURN ) Result       *  operator -> ()          noexcept { return &result(); }
-    BOOST_ATTRIBUTES( BOOST_RESTRICTED_FUNCTION_RETURN ) Result const *  operator -> () const    noexcept { return &result(); }
+    Result       && operator *  ()       && noexcept { return std::move( result() ); }
+    Result       &  operator *  ()       &  noexcept { return            result()  ; }
+    Result const &  operator *  () const &  noexcept { return            result()  ; }
+    Result       &  operator -> ()          noexcept { return            result()  ; }
+    Result const &  operator -> () const    noexcept { return            result()  ; }
+
+    /// \note Automatic to-Result conversion makes it too easy to forget to
+    /// first inspect the returned value for success.
+    ///                                       (11.04.2017.) (Domagoj Saric)
+    //operator Result       & ()       noexcept { return result(); }
+    //operator Result const & () const noexcept { return result(); }
 
                       bool inspected() BOOST_RESTRICTED_THIS const noexcept {                    return BOOST_LIKELY( inspected_ ); }
                       bool succeeded() BOOST_RESTRICTED_THIS const noexcept { inspected_ = true; return BOOST_LIKELY( succeeded_ ); }
     explicit operator bool          () BOOST_RESTRICTED_THIS const noexcept {                    return succeeded()               ; }
+
+    Result && assume_succeeded() && noexcept { BOOST_ASSUME( succeeded() ); return std::move( result() ); }
 
 BOOST_OPTIMIZE_FOR_SIZE_BEGIN()
 #ifndef BOOST_NO_EXCEPTIONS
@@ -177,7 +185,7 @@ BOOST_OPTIMIZE_FOR_SIZE_BEGIN()
         BOOST_ASSUME( inspected_ );
     }
 
-    BOOST_ATTRIBUTES( BOOST_DOES_NOT_RETURN, BOOST_COLD )
+    [[noreturn, BOOST_COLD]]
     void BOOST_CC_REG throw_error() BOOST_RESTRICTED_THIS
     {
         BOOST_ASSERT( !succeeded() );
@@ -186,7 +194,7 @@ BOOST_OPTIMIZE_FOR_SIZE_BEGIN()
     }
 #endif // BOOST_NO_EXCEPTIONS
 
-    BOOST_ATTRIBUTES( BOOST_COLD )
+    [[BOOST_COLD]]
     std::exception_ptr BOOST_CC_REG make_exception_ptr() noexcept
     {
         // http://en.cppreference.com/w/cpp/error/exception_ptr
@@ -226,7 +234,7 @@ private: friend class fallible_result<Result, Error>;
 ////////////////////////////////////////////////////////////////////////////////
 
 template <class Result, class Error>
-class result_or_error<Result, Error, typename std::enable_if<compressed_result_error_variant<Result, Error>::value>::type>
+class [[nodiscard]] result_or_error<Result, Error, typename std::enable_if<compressed_result_error_variant<Result, Error>::value>::type>
 {
 public:
     template <typename Source>
@@ -246,13 +254,13 @@ public:
 #if 0 // disabled
     ~result_or_error() noexcept { BOOST_ASSERT_MSG( inspected(), "Ignored error return code." ); };
 #endif
-                                                         Result       && operator *  ()       && noexcept { return  result(); }
-                                                         Result       &  operator *  ()       &  noexcept { return  result(); }
-                                                         Result const &  operator *  () const &  noexcept { return  result(); }
-    BOOST_ATTRIBUTES( BOOST_RESTRICTED_FUNCTION_RETURN ) Result       *  operator -> ()          noexcept { return &result(); }
-    BOOST_ATTRIBUTES( BOOST_RESTRICTED_FUNCTION_RETURN ) Result const *  operator -> () const    noexcept { return &result(); }
+    Result       && operator *  ()       && noexcept { return std::move( result() ); }
+    Result       &  operator *  ()       &  noexcept { return            result()  ; }
+    Result const &  operator *  () const &  noexcept { return            result()  ; }
+    Result       &  operator -> ()          noexcept { return            result()  ; }
+    Result const &  operator -> () const    noexcept { return            result()  ; }
 
-    BOOST_ATTRIBUTES( BOOST_COLD )
+    [[BOOST_COLD]]
     Error          error () const noexcept { BOOST_ASSERT_MSG( inspected() && !*this, "Querying the error of a (possibly) succeeded operation." ); return Error(); }
     Result       & result()       noexcept { BOOST_ASSERT_MSG( inspected() &&  *this, "Querying the result of a (possibly) failed operation."   ); return result_; }
     Result const & result() const noexcept { return const_cast<result_or_error &>( *this ).result(); }
@@ -260,6 +268,8 @@ public:
                       bool inspected() const noexcept {                    return BOOST_LIKELY(                    inspected_ ); }
                       bool succeeded() const noexcept { inspected_ = true; return BOOST_LIKELY( static_cast<bool>( result_ )  ); }
     explicit operator bool          () const noexcept {                    return succeeded()                                  ; }
+
+    Result && assume_succeeded() && noexcept { BOOST_ASSUME( succeeded() ); return std::move( result() ); }
 
     BOOST_OPTIMIZE_FOR_SIZE_BEGIN()
 #ifndef BOOST_NO_EXCEPTIONS //...mrmlj...kill this duplication with the unspecialized template...
@@ -283,7 +293,7 @@ public:
         BOOST_ASSUME( inspected_ );
     }
 
-    BOOST_ATTRIBUTES( BOOST_COLD )
+    [[BOOST_COLD]]
     void throw_error()
     {
         BOOST_ASSERT( !succeeded() );
@@ -292,7 +302,7 @@ public:
     }
 #endif // BOOST_NO_EXCEPTIONS
 
-    BOOST_ATTRIBUTES( BOOST_COLD )
+    [[BOOST_COLD]]
     std::exception_ptr BOOST_CC_REG make_exception_ptr()
     {
         BOOST_ASSERT( !succeeded() );
@@ -319,7 +329,7 @@ template <class Error>
 using void_or_error = result_or_error<void, Error, void>;
 
 template <class Error>
-class result_or_error<void, Error, void>
+class [[nodiscard]] result_or_error<void, Error, void>
 {
 public:
     template <typename Source>
@@ -339,18 +349,21 @@ public:
             BOOST_ASSUME( ptr );
             BOOST_ASSUME( !other.succeeded_ );
         }
+        other.succeeded_ = true;
+        other.inspected_ = true;
     }
 
     result_or_error( result_or_error const & ) = delete;
 
-    BOOST_ATTRIBUTES( BOOST_MINSIZE )
+    [[BOOST_MINSIZE]]
     ~result_or_error() noexcept( std::is_nothrow_destructible<Error>::value )
     {
+        BOOST_ASSERT_MSG( inspected(), "Ignored (error) return value." );
         if ( BOOST_UNLIKELY( !succeeded_ ) )
             error_.~Error();
     };
 
-    BOOST_ATTRIBUTES( BOOST_COLD )
+    [[BOOST_COLD]]
     Error const & error() const noexcept { BOOST_ASSERT_MSG( inspected() && !*this, "Querying the error of a (possibly) succeeded operation." ); return error_; }
 
                       bool inspected() const noexcept {                    return BOOST_LIKELY( inspected_ ); }
@@ -359,7 +372,7 @@ public:
 
 BOOST_OPTIMIZE_FOR_SIZE_BEGIN()
 #ifndef BOOST_NO_EXCEPTIONS //...mrmlj...kill this duplication...
-    BOOST_ATTRIBUTES( BOOST_MINSIZE )
+    [[BOOST_MINSIZE]]
     void throw_if_error()
     {
         BOOST_ASSERT( !std::uncaught_exception() );
@@ -379,7 +392,7 @@ BOOST_OPTIMIZE_FOR_SIZE_BEGIN()
         BOOST_ASSUME( inspected_ );
     }
 
-    BOOST_ATTRIBUTES( BOOST_DOES_NOT_RETURN, BOOST_COLD )
+    [[noreturn, BOOST_COLD]]
     void throw_error() noexcept( false )
     {
         BOOST_ASSERT( !succeeded() );
@@ -388,7 +401,7 @@ BOOST_OPTIMIZE_FOR_SIZE_BEGIN()
     }
 #endif // BOOST_NO_EXCEPTIONS
 
-    BOOST_ATTRIBUTES( BOOST_COLD )
+    [[BOOST_COLD]]
     std::exception_ptr BOOST_CC_REG make_exception_ptr()
     {
         BOOST_ASSERT( !succeeded() );
@@ -418,6 +431,12 @@ template <typename Result, typename Error, typename Dummy> bool operator==( resu
 template <typename Result, typename Error, typename Dummy> bool operator==( result_or_error<Result, Error, Dummy> const & result, an_err_t ) noexcept { return !result.succeeded(); }
 template <typename Result, typename Error, typename Dummy> bool operator!=( result_or_error<Result, Error, Dummy> const & result, no_err_t ) noexcept { return !result.succeeded(); }
 template <typename Result, typename Error, typename Dummy> bool operator!=( result_or_error<Result, Error, Dummy> const & result, an_err_t ) noexcept { return  result.succeeded(); }
+
+#define BOOST_ERR_PROPAGATE_FAILURE( expression ) \
+    { auto const result( expression ); if ( !result ) result.error(); }
+
+#define BOOST_ERR_SAVE_RESULT_OR_PROPAGATE_FAILURE( result, expression ) \
+    auto result( expression ); if ( !result ) result.error();
 
 //------------------------------------------------------------------------------
 } // namespace err

@@ -29,9 +29,8 @@ Similar libraries and/or discussions where the concept (or a similar one) was fi
 * ["Survey of Error Handling" by N. Bolas](https://11080372623597421729.googlegroups.com/attach/a8bf61b2beb10bec/Survey%20of%20Error%20Handling.html?part=0.1&view=1&vt=ANaJVrGXbT5TGHEPTZWW_iduAUmJBNCyB6yvlV3L0LQk5eZ3dsCSBPSx0hql8fZ3MMCGjw-xBx8bIt6e4-4A0q_fE1U_7jREulA6RbE2Roh4sHOov8TUMtw)
 * [Handling Disappointment in C++](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2015/p0157r0.html)
 
-##### Other submodule requirements
-(to be added to the include path _before_ the offical Boost distribution):
- * https://github.com/psiha/config (develop)
+##### Submodule requirements:
+ * config_ex
 
 ##### C++ In-The-Kernel Now!
 ##### Copyright © 2015 - 2016. Domagoj Saric. All rights reserved.
