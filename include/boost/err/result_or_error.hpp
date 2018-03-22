@@ -357,7 +357,11 @@ public:
     BOOST_ATTRIBUTES( BOOST_MINSIZE )
     ~result_or_error() noexcept( std::is_nothrow_destructible<Error>::value )
     {
-        BOOST_ASSERT_MSG( inspected(), "Ignored (error) return value." );
+        /** @note
+         * See above implementation note for generic version.
+         *                            (02.02.2018.) (Nenad Miksa)
+         */
+        // BOOST_ASSERT_MSG( inspected(), "Ignored (error) return value." );
         if ( BOOST_UNLIKELY( !succeeded_ ) )
             error_.~Error();
     };
