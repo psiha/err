@@ -127,7 +127,7 @@ namespace detail
             (
                 at_least_one_inspected ||
                 live_instance_counter  ||  // there are still live fallible_results (allow that one of those will be inspected even if none have been so far)
-                std::uncaught_exception(), // a '3rd party' exception caused early exit
+                std::uncaught_exceptions(), // a '3rd party' exception caused early exit
                 "Uninspected fallible_result<T>."
             );
             at_least_one_inspected &= ( live_instance_counter != 0 );
