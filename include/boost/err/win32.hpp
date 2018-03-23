@@ -3,7 +3,7 @@
 /// \file win32.hpp
 /// ---------------
 ///
-/// Copyright (c) Domagoj Saric 2015 - 2016.
+/// Copyright (c) Domagoj Saric 2015 - 2018.
 ///
 /// Use, modification and distribution is subject to the
 /// Boost Software License, Version 1.0.
@@ -18,9 +18,9 @@
 #define win32_hpp__ER092463_ED23_445A_9C11_5AA500DC59A8
 #pragma once
 //------------------------------------------------------------------------------
-#include <boost/config.hpp>
-#include <boost/detail/winapi/error_handling.hpp>
-#include <boost/detail/winapi/GetLastError.hpp>
+#include <boost/config_ex.hpp>
+#include <boost/winapi/error_handling.hpp>
+#include <boost/winapi/get_last_error.hpp>
 
 //...mrmlj...for SetLastError...
 #ifndef WIN32_LEAN_AND_MEAN
@@ -57,9 +57,9 @@ struct last_win32_error
     static value_type const no_error = 0;
 
     BOOST_ATTRIBUTES( BOOST_COLD, BOOST_EXCEPTIONLESS, BOOST_RESTRICTED_FUNCTION_L2, BOOST_WARN_UNUSED_RESULT )
-    static value_type BOOST_CC_REG get(                        ) noexcept { return   boost::detail::winapi  ::GetLastError(       ); }
+    static value_type BOOST_CC_REG get(                        ) noexcept { return   boost::winapi  ::GetLastError(       ); }
     BOOST_ATTRIBUTES( BOOST_COLD, BOOST_EXCEPTIONLESS )
-    static void       BOOST_CC_REG set( value_type const value ) noexcept { return /*boost::detail::winapi*/::SetLastError( value ); }
+    static void       BOOST_CC_REG set( value_type const value ) noexcept { return /*boost::winapi*/::SetLastError( value ); }
 
     BOOST_ATTRIBUTES( BOOST_MINSIZE, BOOST_EXCEPTIONLESS )
     static void       BOOST_CC_REG clear() noexcept { return set( ERROR_SUCCESS ); }
@@ -99,7 +99,7 @@ BOOST_OVERRIDABLE_MEMBER_SYMBOL BOOST_THREAD_LOCAL_POD std::uint8_t last_win32_e
 inline BOOST_ATTRIBUTES( BOOST_COLD )
 std::runtime_error BOOST_CC_REG make_exception( last_win32_error const error )
 {
-    using namespace boost::detail::winapi;
+    using namespace boost::winapi;
 
     BOOST_ASSERT_MSG( error.value != last_win32_error::no_error, "Throwing on no error?" );
 
