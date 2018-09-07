@@ -144,8 +144,8 @@ BOOST_OPTIMIZE_FOR_SIZE_END()
     Result       && operator *  ()       && noexcept { return std::move( result() ); }
     Result       &  operator *  ()       &  noexcept { return            result()  ; }
     Result const &  operator *  () const &  noexcept { return            result()  ; }
-    Result       *  operator -> ()          noexcept { return           &result()  ; }
-    Result const *  operator -> () const    noexcept { return           &result()  ; }
+    Result       &  operator -> ()          noexcept { return            result()  ; }
+    Result const &  operator -> () const    noexcept { return            result()  ; }
 
     /// \note Automatic to-Result conversion makes it too easy to forget to
     /// first inspect the returned value for success.
