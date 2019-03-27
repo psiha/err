@@ -3,7 +3,7 @@
 /// \file result_or_error.hpp
 /// -------------------------
 ///
-/// Copyright (c) Domagoj Saric 2015 - 2017.
+/// Copyright (c) Domagoj Saric 2015 - 2019.
 ///
 /// Use, modification and distribution is subject to the
 /// Boost Software License, Version 1.0.
@@ -190,7 +190,10 @@ BOOST_OPTIMIZE_FOR_SIZE_BEGIN()
     {
         BOOST_ASSERT( !succeeded() );
         //BOOST_ASSERT( !std::uncaught_exception() );
-        make_and_throw_exception( std::move( error_ ) );
+        // Workaround for an Apple Clang compilation error
+        // (from the uber broken Xcode 10.2 update) - const_cast the effective
+        // restrict qualifier from the error_ member.
+        make_and_throw_exception( std::move( const_cast< Error & >( error_ ) ) );
     }
 #endif // BOOST_NO_EXCEPTIONS
 
