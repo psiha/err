@@ -3,7 +3,7 @@
 /// \file thread_singleton.hpp
 /// --------------------------
 ///
-/// Copyright (c) Domagoj Saric 2015 - 2016.
+/// Copyright (c) Domagoj Saric 2015 - 2019.
 ///
 /// Use, modification and distribution is subject to the
 /// Boost Software License, Version 1.0.
@@ -47,7 +47,7 @@ namespace detail
 ///
 /// \class thread_singleton
 ///
-/// \brief BOOST_THREAD_LOCAL_POD alternative that works even on Android.
+/// \brief BOOST_THREAD_LOCAL_POD alternative with a POSIX fallback.
 ///
 /// \detail Even in C++14 (but 'real') world we cannot 'just use' thread_local
 /// or even __thread/_Thread_local:
@@ -55,8 +55,7 @@ namespace detail
 ///   https://devforums.apple.com/message/1101679#1101679
 ///   http://comments.gmane.org/gmane.editors.textmate.general/38535
 ///   https://github.com/textmate/textmate/commit/172ce9d4282e408fe60b699c432390b9f6e3f74a
-/// - __thread is not available on Android with Clang (see documentation/comment
-///   for BOOST_THREAD_LOCAL_POD)
+/// - even __thread is not available on 32bit iOS
 ///                                           (16.12.2015.) (Domagoj Saric)
 ///
 ////////////////////////////////////////////////////////////////////////////////
@@ -71,13 +70,13 @@ namespace detail
 ///                                           (08.01.2016.) (Domagoj Saric)
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifdef BOOST_THREAD_LOCAL_POD
+#if defined( BOOST_THREAD_LOCAL_POD ) && !( defined( __APPLE__ ) && defined( __arm__ ) )
 template <typename T, typename Tag = void>
 struct thread_singleton
 {
     static T & instance()
     {
-        static_assert( std::/*is_pod*/is_trivially_destructible<T>::value, "Only PODs supported." );
+        static_assert( std::/*is_pod*/is_trivially_destructible_v<T>, "Only PODs supported." );
         static BOOST_THREAD_LOCAL_POD T instance_;
         return instance_;
     }
@@ -91,9 +90,9 @@ public:
     static T & instance()
     {
     #if defined( __GNUC__ )
-        static_assert( std::is_trivially_destructible<T>::value, "" );
+        static_assert( std::is_trivially_destructible_v<T> );
     #else
-        static_assert( std::is_pod                   <T>::value, "" );
+        static_assert( std::is_pod_v                   <T> );
     #endif // compiler
 
         struct wrapper { T instance; }; // workaround for arrays
