@@ -27,7 +27,7 @@
 #include <new>
 #include <type_traits>
 
-#ifndef BOOST_THREAD_LOCAL_POD
+#if !defined( BOOST_THREAD_LOCAL_POD ) || ( defined( __APPLE__ ) && defined( __arm__ ) )
 #include "../exceptions.hpp"
 
 #include <pthread.h>
