@@ -160,7 +160,7 @@ BOOST_OPTIMIZE_FOR_SIZE_END()
     Result && assume_succeeded() && noexcept { BOOST_VERIFY( succeeded() ); return std::move( result() ); }
 
 BOOST_OPTIMIZE_FOR_SIZE_BEGIN()
-#ifndef BOOST_NO_EXCEPTIONS
+
     BOOST_ATTRIBUTES( BOOST_MINSIZE )
     void BOOST_CC_REG throw_if_error() BOOST_RESTRICTED_THIS
     {
@@ -195,7 +195,6 @@ BOOST_OPTIMIZE_FOR_SIZE_BEGIN()
         // restrict qualifier from the error_ member.
         make_and_throw_exception( std::move( const_cast< Error & >( error_ ) ) );
     }
-#endif // BOOST_NO_EXCEPTIONS
 
     BOOST_ATTRIBUTES( BOOST_COLD )
     std::exception_ptr BOOST_CC_REG make_exception_ptr() noexcept
