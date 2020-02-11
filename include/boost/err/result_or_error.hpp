@@ -259,8 +259,8 @@ public:
     Result       && operator *  ()       && noexcept { return std::move     ( result() ); }
     Result       &  operator *  ()       &  noexcept { return                 result()  ; }
     Result const &  operator *  () const &  noexcept { return                 result()  ; }
-    Result       *  operator -> ()          noexcept { return std::addressof( result() ) ; }
-    Result const *  operator -> () const    noexcept { return std::addressof( result() ) ; }
+    Result       *  operator -> ()          noexcept { return std::addressof( result() ); }
+    Result const *  operator -> () const    noexcept { return std::addressof( result() ); }
 
     BOOST_ATTRIBUTES( BOOST_COLD )
     Error          error () const noexcept { BOOST_ASSERT_MSG( inspected() && !*this, "Querying the error of a (possibly) succeeded operation." ); return Error(); }
