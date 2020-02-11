@@ -141,11 +141,11 @@ BOOST_OPTIMIZE_FOR_SIZE_END()
     Result       & result()       noexcept { BOOST_ASSERT_MSG( inspected(), "Using a result_or_error w/o prior inspection" ); BOOST_ASSERT_MSG(  succeeded_, "Querying the result of a failed operation."   ); return result_; }
     Result const & result() const noexcept { return const_cast<result_or_error &>( *this ).result(); }
 
-    Result       && operator *  ()       && noexcept { return std::move( result() ); }
-    Result       &  operator *  ()       &  noexcept { return            result()  ; }
-    Result const &  operator *  () const &  noexcept { return            result()  ; }
-    Result       &  operator -> ()          noexcept { return            result()  ; }
-    Result const &  operator -> () const    noexcept { return            result()  ; }
+    Result       && operator *  ()       && noexcept { return std::move     ( result() ); }
+    Result       &  operator *  ()       &  noexcept { return                 result()  ; }
+    Result const &  operator *  () const &  noexcept { return                 result()  ; }
+    Result       *  operator -> ()          noexcept { return std::addressof( result() ); }
+    Result const *  operator -> () const    noexcept { return std::addressof( result() ); }
 
     /// \note Automatic to-Result conversion makes it too easy to forget to
     /// first inspect the returned value for success.
@@ -256,11 +256,11 @@ public:
 #if 0 // disabled
     ~result_or_error() noexcept { BOOST_ASSERT_MSG( inspected(), "Ignored error return code." ); };
 #endif
-    Result       && operator *  ()       && noexcept { return std::move( result() ); }
-    Result       &  operator *  ()       &  noexcept { return            result()  ; }
-    Result const &  operator *  () const &  noexcept { return            result()  ; }
-    Result       &  operator -> ()          noexcept { return            result()  ; }
-    Result const &  operator -> () const    noexcept { return            result()  ; }
+    Result       && operator *  ()       && noexcept { return std::move     ( result() ); }
+    Result       &  operator *  ()       &  noexcept { return                 result()  ; }
+    Result const &  operator *  () const &  noexcept { return                 result()  ; }
+    Result       *  operator -> ()          noexcept { return std::addressof( result() ) ; }
+    Result const *  operator -> () const    noexcept { return std::addressof( result() ) ; }
 
     BOOST_ATTRIBUTES( BOOST_COLD )
     Error          error () const noexcept { BOOST_ASSERT_MSG( inspected() && !*this, "Querying the error of a (possibly) succeeded operation." ); return Error(); }
