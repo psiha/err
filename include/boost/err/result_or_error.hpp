@@ -3,7 +3,7 @@
 /// \file result_or_error.hpp
 /// -------------------------
 ///
-/// Copyright (c) Domagoj Saric 2015 - 2019.
+/// Copyright (c) Domagoj Saric 2015 - 2020.
 ///
 /// Use, modification and distribution is subject to the
 /// Boost Software License, Version 1.0.
@@ -141,11 +141,11 @@ BOOST_OPTIMIZE_FOR_SIZE_END()
     Result       & result()       noexcept { BOOST_ASSERT_MSG( inspected(), "Using a result_or_error w/o prior inspection" ); BOOST_ASSERT_MSG(  succeeded_, "Querying the result of a failed operation."   ); return result_; }
     Result const & result() const noexcept { return const_cast<result_or_error &>( *this ).result(); }
 
-    Result       && operator *  ()       && noexcept { return std::move( result() ); }
-    Result       &  operator *  ()       &  noexcept { return            result()  ; }
-    Result const &  operator *  () const &  noexcept { return            result()  ; }
-    Result       *  operator -> ()          noexcept { return           &result()  ; }
-    Result const *  operator -> () const    noexcept { return           &result()  ; }
+    Result       && operator *  ()       && noexcept { return std::move     ( result() ); }
+    Result       &  operator *  ()       &  noexcept { return                 result()  ; }
+    Result const &  operator *  () const &  noexcept { return                 result()  ; }
+    Result       *  operator -> ()          noexcept { return std::addressof( result() ); }
+    Result const *  operator -> () const    noexcept { return std::addressof( result() ); }
 
     /// \note Automatic to-Result conversion makes it too easy to forget to
     /// first inspect the returned value for success.
@@ -160,7 +160,7 @@ BOOST_OPTIMIZE_FOR_SIZE_END()
     Result && assume_succeeded() && noexcept { BOOST_VERIFY( succeeded() ); return std::move( result() ); }
 
 BOOST_OPTIMIZE_FOR_SIZE_BEGIN()
-#ifndef BOOST_NO_EXCEPTIONS
+
     BOOST_ATTRIBUTES( BOOST_MINSIZE )
     void BOOST_CC_REG throw_if_error() BOOST_RESTRICTED_THIS
     {
@@ -195,14 +195,13 @@ BOOST_OPTIMIZE_FOR_SIZE_BEGIN()
         // restrict qualifier from the error_ member.
         make_and_throw_exception( std::move( const_cast< Error & >( error_ ) ) );
     }
-#endif // BOOST_NO_EXCEPTIONS
 
     BOOST_ATTRIBUTES( BOOST_COLD )
     std::exception_ptr BOOST_CC_REG make_exception_ptr() noexcept
     {
         // http://en.cppreference.com/w/cpp/error/exception_ptr
         BOOST_ASSERT( !succeeded() );
-        BOOST_ASSERT( !std::uncaught_exception() );
+        BOOST_ASSERT( !std::uncaught_exceptions() );
         return make_exception_ptr( std::move( error_ ) );
     }
 BOOST_OPTIMIZE_FOR_SIZE_END()
@@ -257,11 +256,11 @@ public:
 #if 0 // disabled
     ~result_or_error() noexcept { BOOST_ASSERT_MSG( inspected(), "Ignored error return code." ); };
 #endif
-    Result       && operator *  ()       && noexcept { return std::move( result() ); }
-    Result       &  operator *  ()       &  noexcept { return            result()  ; }
-    Result const &  operator *  () const &  noexcept { return            result()  ; }
-    Result       &  operator -> ()          noexcept { return            result()  ; }
-    Result const &  operator -> () const    noexcept { return            result()  ; }
+    Result       && operator *  ()       && noexcept { return std::move     ( result() ); }
+    Result       &  operator *  ()       &  noexcept { return                 result()  ; }
+    Result const &  operator *  () const &  noexcept { return                 result()  ; }
+    Result       *  operator -> ()          noexcept { return std::addressof( result() ); }
+    Result const *  operator -> () const    noexcept { return std::addressof( result() ); }
 
     BOOST_ATTRIBUTES( BOOST_COLD )
     Error          error () const noexcept { BOOST_ASSERT_MSG( inspected() && !*this, "Querying the error of a (possibly) succeeded operation." ); return Error(); }
@@ -309,7 +308,7 @@ public:
     std::exception_ptr BOOST_CC_REG make_exception_ptr()
     {
         BOOST_ASSERT( !succeeded() );
-        BOOST_ASSERT( !std::uncaught_exception() );
+        BOOST_ASSERT( !std::uncaught_exceptions() );
         return make_exception_ptr( error() );
     }
     BOOST_OPTIMIZE_FOR_SIZE_END()
@@ -411,7 +410,7 @@ BOOST_OPTIMIZE_FOR_SIZE_BEGIN()
     std::exception_ptr BOOST_CC_REG make_exception_ptr()
     {
         BOOST_ASSERT( !succeeded() );
-        BOOST_ASSERT( !std::uncaught_exception() );
+        BOOST_ASSERT( !std::uncaught_exceptions() );
         return make_exception_ptr( error() );
     }
 BOOST_OPTIMIZE_FOR_SIZE_END()
