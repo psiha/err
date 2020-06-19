@@ -3,7 +3,7 @@
 /// \file result_or_error.hpp
 /// -------------------------
 ///
-/// Copyright (c) Domagoj Saric 2015 - 2019.
+/// Copyright (c) Domagoj Saric 2015 - 2020.
 ///
 /// Use, modification and distribution is subject to the
 /// Boost Software License, Version 1.0.
@@ -201,7 +201,7 @@ BOOST_OPTIMIZE_FOR_SIZE_BEGIN()
     {
         // http://en.cppreference.com/w/cpp/error/exception_ptr
         BOOST_ASSERT( !succeeded() );
-        BOOST_ASSERT( !std::uncaught_exception() );
+        BOOST_ASSERT( !std::uncaught_exceptions() );
         return make_exception_ptr( std::move( error_ ) );
     }
 BOOST_OPTIMIZE_FOR_SIZE_END()
@@ -308,7 +308,7 @@ public:
     std::exception_ptr BOOST_CC_REG make_exception_ptr()
     {
         BOOST_ASSERT( !succeeded() );
-        BOOST_ASSERT( !std::uncaught_exception() );
+        BOOST_ASSERT( !std::uncaught_exceptions() );
         return make_exception_ptr( error() );
     }
     BOOST_OPTIMIZE_FOR_SIZE_END()
@@ -410,7 +410,7 @@ BOOST_OPTIMIZE_FOR_SIZE_BEGIN()
     std::exception_ptr BOOST_CC_REG make_exception_ptr()
     {
         BOOST_ASSERT( !succeeded() );
-        BOOST_ASSERT( !std::uncaught_exception() );
+        BOOST_ASSERT( !std::uncaught_exceptions() );
         return make_exception_ptr( error() );
     }
 BOOST_OPTIMIZE_FOR_SIZE_END()

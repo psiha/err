@@ -3,7 +3,7 @@
 /// \file exceptios.hpp
 /// -------------------
 ///
-/// Copyright (c) Domagoj Saric 2015 - 2017.
+/// Copyright (c) Domagoj Saric 2015 - 2020.
 ///
 /// Use, modification and distribution is subject to the
 /// Boost Software License, Version 1.0.
@@ -82,7 +82,7 @@ namespace detail
     BOOST_ATTRIBUTES( BOOST_COLD )
     void BOOST_CC_REG conditional_throw( Error && error )
     {
-        if ( BOOST_LIKELY( !std::uncaught_exception() ) )
+        if ( BOOST_LIKELY( !std::uncaught_exceptions() ) )
             make_and_throw_exception( std::move( error ) );
     }
 } // namespace detail
