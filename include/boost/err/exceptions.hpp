@@ -42,7 +42,7 @@ BOOST_OPTIMIZE_FOR_SIZE_BEGIN()
 ////////////////////////////////////////////////////////////////////////////////
 ///
 /// \brief Transform an error code/object into a corresponding exception.
-/// 
+///
 /// \detail Intended to be specialised or overloaded for user types. Boost.Err
 /// will call it unqualified in order to allow ADL to kick in.
 ///
@@ -78,11 +78,20 @@ std::exception_ptr BOOST_CC_REG make_exception_ptr( Error && error ) { return st
 
 namespace detail
 {
+    auto uncaught_exceptions() noexcept
+    {
+    #if __cpp_lib_uncaught_exceptions
+        return std::uncaught_exceptions();
+    #else
+        return std::uncaught_exception();
+    #endif // __cpp_lib_uncaught_exceptions
+    }
+
     template <typename Error>
     BOOST_ATTRIBUTES( BOOST_COLD )
     void BOOST_CC_REG conditional_throw( Error && error )
     {
-        if ( BOOST_LIKELY( !std::uncaught_exceptions() ) )
+        if ( BOOST_LIKELY( !uncaught_exceptions() ) )
             make_and_throw_exception( std::move( error ) );
     }
 } // namespace detail
