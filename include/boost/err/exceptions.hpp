@@ -78,7 +78,7 @@ std::exception_ptr BOOST_CC_REG make_exception_ptr( Error && error ) { return st
 
 namespace detail
 {
-    auto uncaught_exceptions() noexcept
+    inline auto uncaught_exceptions() noexcept
     {
     #if __cpp_lib_uncaught_exceptions
         return std::uncaught_exceptions();
