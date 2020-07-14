@@ -68,6 +68,12 @@ using compressed_result_error_variant =
 template <class Result, class Error>
 class fallible_result;
 
+struct TagResult {};
+constexpr auto tag_result = TagResult{};
+
+struct TagError  {};
+constexpr auto tag_error = TagError{};
+
 template <class Result, class Error, typename = void>
 class [[nodiscard]] result_or_error
 {
@@ -84,6 +90,9 @@ public:
     // todo: variadic arguments
     template <typename Source>                                result_or_error( Source && BOOST_RESTRICTED_REF result, typename std::enable_if<std::is_constructible<Result, Source &&>::value>::type const * = nullptr ) noexcept( std::is_nothrow_constructible<Result, Source &&>::value ) : succeeded_( true  ), inspected_( false ), result_( std::forward<Source>( result ) ) {}
     template <typename Source> BOOST_ATTRIBUTES( BOOST_COLD ) result_or_error( Source && BOOST_RESTRICTED_REF error , typename std::enable_if<std::is_constructible<Error , Source &&>::value>::type const * = nullptr ) noexcept( std::is_nothrow_constructible<Error , Source &&>::value ) : succeeded_( false ), inspected_( false ), error_ ( std::forward<Source>( error  ) ) {}
+
+    template <typename Source> BOOST_ATTRIBUTES( BOOST_COLD ) result_or_error( TagResult const, Source && BOOST_RESTRICTED_REF result ) noexcept( std::is_nothrow_constructible<Result, Source &&>::value ) : succeeded_( true  ), inspected_( false ), result_( std::forward<Source>( result ) ) {}
+    template <typename Source> BOOST_ATTRIBUTES( BOOST_COLD ) result_or_error( TagError  const, Source && BOOST_RESTRICTED_REF error  ) noexcept( std::is_nothrow_constructible<Error , Source &&>::value ) : succeeded_( false ), inspected_( false ), error_ ( std::forward<Source>( error  ) ) {}
 
     result_or_error( result_or_error && BOOST_RESTRICTED_REF other )
         noexcept
