@@ -167,7 +167,7 @@ BOOST_OPTIMIZE_FOR_SIZE_BEGIN()
     BOOST_ATTRIBUTES( BOOST_MINSIZE )
     void BOOST_CC_REG throw_if_error() BOOST_RESTRICTED_THIS
     {
-        //BOOST_ASSERT( !detail::uncaught_exception() );
+        //BOOST_ASSERT( !detail::uncaught_exceptions() );
         if ( succeeded() )
         {
             BOOST_ASSUME( inspected_ );
@@ -192,7 +192,7 @@ BOOST_OPTIMIZE_FOR_SIZE_BEGIN()
     void BOOST_CC_REG throw_error() BOOST_RESTRICTED_THIS
     {
         BOOST_ASSERT( !succeeded() );
-        //BOOST_ASSERT( !detail::uncaught_exception() );
+        //BOOST_ASSERT( !detail::uncaught_exceptions() );
         // Workaround for an Apple Clang compilation error
         // (from the uber broken Xcode 10.2 update) - const_cast the effective
         // restrict qualifier from the error_ member.
@@ -281,7 +281,7 @@ public:
     BOOST_ATTRIBUTES( BOOST_MINSIZE )
     void throw_if_error()
     {
-        //BOOST_ASSERT( !detail::uncaught_exception() );
+        //BOOST_ASSERT( !detail::uncaught_exceptions() );
         if ( BOOST_LIKELY( succeeded() ) )
         {
             BOOST_ASSUME( inspected_ );
@@ -302,7 +302,7 @@ public:
     void throw_error()
     {
         BOOST_ASSERT( !succeeded() );
-        //BOOST_ASSERT( !detail::uncaught_exception() );
+        //BOOST_ASSERT( !detail::uncaught_exceptions() );
         detail::conditional_throw( error() );
     }
 #endif // BOOST_NO_EXCEPTIONS
@@ -383,7 +383,7 @@ BOOST_OPTIMIZE_FOR_SIZE_BEGIN()
     BOOST_ATTRIBUTES( BOOST_MINSIZE )
     void throw_if_error()
     {
-        BOOST_ASSERT( !detail::uncaught_exception() );
+        BOOST_ASSERT( !detail::uncaught_exceptions() );
         if ( BOOST_LIKELY( succeeded() ) )
         {
             BOOST_ASSUME( inspected_ );
@@ -404,7 +404,7 @@ BOOST_OPTIMIZE_FOR_SIZE_BEGIN()
     void throw_error() noexcept( false )
     {
         BOOST_ASSERT( !succeeded() );
-        BOOST_ASSERT( !detail::uncaught_exception() );
+        BOOST_ASSERT( !detail::uncaught_exceptions() );
         make_and_throw_exception( error() );
     }
 #endif // BOOST_NO_EXCEPTIONS
