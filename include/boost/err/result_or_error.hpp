@@ -85,6 +85,9 @@ public:
     template <typename Source>                                result_or_error( Source && BOOST_RESTRICTED_REF result, typename std::enable_if<std::is_constructible<Result, Source &&>::value>::type const * = nullptr ) noexcept( std::is_nothrow_constructible<Result, Source &&>::value ) : succeeded_( true  ), inspected_( false ), result_( std::forward<Source>( result ) ) {}
     template <typename Source> BOOST_ATTRIBUTES( BOOST_COLD ) result_or_error( Source && BOOST_RESTRICTED_REF error , typename std::enable_if<std::is_constructible<Error , Source &&>::value>::type const * = nullptr ) noexcept( std::is_nothrow_constructible<Error , Source &&>::value ) : succeeded_( false ), inspected_( false ), error_ ( std::forward<Source>( error  ) ) {}
 
+    result_or_error( Result && result ) : succeeded_( true  ), inspected_( false ), result_( std::forward< Result >( result ) ) {}
+    result_or_error( Error  && error  ) : succeeded_( false ), inspected_( false ), error_ ( std::forward< Error  >( error  ) ) {}
+
     result_or_error( result_or_error && BOOST_RESTRICTED_REF other )
         noexcept
         (
@@ -164,7 +167,7 @@ BOOST_OPTIMIZE_FOR_SIZE_BEGIN()
     BOOST_ATTRIBUTES( BOOST_MINSIZE )
     void BOOST_CC_REG throw_if_error() BOOST_RESTRICTED_THIS
     {
-        //BOOST_ASSERT( !std::uncaught_exception() );
+        //BOOST_ASSERT( !detail::uncaught_exception() );
         if ( succeeded() )
         {
             BOOST_ASSUME( inspected_ );
@@ -189,7 +192,7 @@ BOOST_OPTIMIZE_FOR_SIZE_BEGIN()
     void BOOST_CC_REG throw_error() BOOST_RESTRICTED_THIS
     {
         BOOST_ASSERT( !succeeded() );
-        //BOOST_ASSERT( !std::uncaught_exception() );
+        //BOOST_ASSERT( !detail::uncaught_exception() );
         // Workaround for an Apple Clang compilation error
         // (from the uber broken Xcode 10.2 update) - const_cast the effective
         // restrict qualifier from the error_ member.
@@ -201,7 +204,7 @@ BOOST_OPTIMIZE_FOR_SIZE_BEGIN()
     {
         // http://en.cppreference.com/w/cpp/error/exception_ptr
         BOOST_ASSERT( !succeeded() );
-        BOOST_ASSERT( !std::uncaught_exceptions() );
+        BOOST_ASSERT( !detail::uncaught_exceptions() );
         return make_exception_ptr( std::move( error_ ) );
     }
 BOOST_OPTIMIZE_FOR_SIZE_END()
@@ -278,7 +281,7 @@ public:
     BOOST_ATTRIBUTES( BOOST_MINSIZE )
     void throw_if_error()
     {
-        //BOOST_ASSERT( !std::uncaught_exception() );
+        //BOOST_ASSERT( !detail::uncaught_exception() );
         if ( BOOST_LIKELY( succeeded() ) )
         {
             BOOST_ASSUME( inspected_ );
@@ -299,7 +302,7 @@ public:
     void throw_error()
     {
         BOOST_ASSERT( !succeeded() );
-        //BOOST_ASSERT( !std::uncaught_exception() );
+        //BOOST_ASSERT( !detail::uncaught_exception() );
         detail::conditional_throw( error() );
     }
 #endif // BOOST_NO_EXCEPTIONS
@@ -308,7 +311,7 @@ public:
     std::exception_ptr BOOST_CC_REG make_exception_ptr()
     {
         BOOST_ASSERT( !succeeded() );
-        BOOST_ASSERT( !std::uncaught_exceptions() );
+        BOOST_ASSERT( !detail::uncaught_exceptions() );
         return make_exception_ptr( error() );
     }
     BOOST_OPTIMIZE_FOR_SIZE_END()
@@ -380,7 +383,7 @@ BOOST_OPTIMIZE_FOR_SIZE_BEGIN()
     BOOST_ATTRIBUTES( BOOST_MINSIZE )
     void throw_if_error()
     {
-        BOOST_ASSERT( !std::uncaught_exception() );
+        BOOST_ASSERT( !detail::uncaught_exception() );
         if ( BOOST_LIKELY( succeeded() ) )
         {
             BOOST_ASSUME( inspected_ );
@@ -401,7 +404,7 @@ BOOST_OPTIMIZE_FOR_SIZE_BEGIN()
     void throw_error() noexcept( false )
     {
         BOOST_ASSERT( !succeeded() );
-        BOOST_ASSERT( !std::uncaught_exception() );
+        BOOST_ASSERT( !detail::uncaught_exception() );
         make_and_throw_exception( error() );
     }
 #endif // BOOST_NO_EXCEPTIONS
@@ -410,7 +413,7 @@ BOOST_OPTIMIZE_FOR_SIZE_BEGIN()
     std::exception_ptr BOOST_CC_REG make_exception_ptr()
     {
         BOOST_ASSERT( !succeeded() );
-        BOOST_ASSERT( !std::uncaught_exceptions() );
+        BOOST_ASSERT( !detail::uncaught_exceptions() );
         return make_exception_ptr( error() );
     }
 BOOST_OPTIMIZE_FOR_SIZE_END()

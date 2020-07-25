@@ -27,7 +27,7 @@
 #include <new>
 #include <type_traits>
 
-#ifndef BOOST_THREAD_LOCAL_POD
+#if !defined( BOOST_THREAD_LOCAL_POD ) || ( defined( __APPLE__ ) && !defined( __aarch64__ ) )
 #include "../exceptions.hpp"
 
 #include <pthread.h>
@@ -70,7 +70,7 @@ namespace detail
 ///                                           (08.01.2016.) (Domagoj Saric)
 ////////////////////////////////////////////////////////////////////////////////
 
-#if defined( BOOST_THREAD_LOCAL_POD ) && !( defined( __APPLE__ ) && defined( __arm__ ) )
+#if defined( BOOST_THREAD_LOCAL_POD ) && !( defined( __APPLE__ ) && !defined( __aarch64__ ) )
 template <typename T, typename Tag = void>
 struct thread_singleton
 {
