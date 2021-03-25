@@ -77,7 +77,11 @@ struct thread_singleton
     static T & instance()
     {
         static_assert( std::/*is_pod*/is_trivially_destructible_v<T>, "Only PODs supported." );
+    #if defined( __EMSCRIPTEN__ ) && !defined( __EMSCRIPTEN_PTHREADS__ )
+        static T instance_; // single-threaded emscripten does not need to use TLS
+    #else
         static BOOST_THREAD_LOCAL_POD T instance_;
+    #endif
         return instance_;
     }
 }; // struct thread_singleton
