@@ -70,7 +70,7 @@ namespace detail
 ///                                           (08.01.2016.) (Domagoj Saric)
 ////////////////////////////////////////////////////////////////////////////////
 
-#if defined( BOOST_THREAD_LOCAL_POD ) && !( defined( __APPLE__ ) && !defined( __aarch64__ ) )
+#if defined( BOOST_THREAD_LOCAL_POD )
 template <typename T, typename Tag = void>
 struct thread_singleton
 {
