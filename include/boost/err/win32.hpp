@@ -31,7 +31,12 @@
 #endif // NOMINMAX
 #include <windows.h>
 
+#ifdef __bound
+#   undef __bound
+#endif
+
 #include <cstdint>
+#include <cstring>  // needed for std::strlen
 #include <stdexcept>
 //------------------------------------------------------------------------------
 namespace boost
@@ -113,7 +118,14 @@ std::runtime_error BOOST_CC_REG make_exception( last_win32_error const error )
         )
     );
     BOOST_ASSERT( message_length                           );
+#ifdef __clang__
+#   pragma clang diagnostic push
+#   pragma clang diagnostic ignored "-Wassume"
+#endif
     BOOST_ASSUME( std::strlen( message ) == message_length );
+#ifdef __clang__
+#   pragma clang diagnostic pop
+#endif
 
     return std::runtime_error( message );
 }
