@@ -27,11 +27,15 @@
 #include <new>
 #include <type_traits>
 
-#if !defined( BOOST_THREAD_LOCAL_POD ) || ( defined( __APPLE__ ) && !defined( __aarch64__ ) )
+#ifndef BOOST_THREAD_LOCAL_POD
 #include "../exceptions.hpp"
 
 #include <pthread.h>
 #endif // !BOOST_THREAD_LOCAL_POD
+
+#ifdef __APPLE__
+#include <TargetConditionals.h>
+#endif
 //------------------------------------------------------------------------------
 namespace boost
 {
@@ -70,14 +74,18 @@ namespace detail
 ///                                           (08.01.2016.) (Domagoj Saric)
 ////////////////////////////////////////////////////////////////////////////////
 
-#if defined( BOOST_THREAD_LOCAL_POD ) && !( defined( __APPLE__ ) && !defined( __aarch64__ ) )
+#if defined( BOOST_THREAD_LOCAL_POD )
 template <typename T, typename Tag = void>
 struct thread_singleton
 {
     static T & instance()
     {
         static_assert( std::/*is_pod*/is_trivially_destructible_v<T>, "Only PODs supported." );
+    #if ( defined( __EMSCRIPTEN__ ) && !defined( __EMSCRIPTEN_PTHREADS__ ) ) || ( defined( __APPLE__ ) && TARGET_OS_SIMULATOR && defined( __i386__ ) )
+        static T instance_; // single-threaded emscripten does not need to use TLS and 32-bit iOS simulator does not support it
+    #else
         static BOOST_THREAD_LOCAL_POD T instance_;
+    #endif
         return instance_;
     }
 }; // struct thread_singleton

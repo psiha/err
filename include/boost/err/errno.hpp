@@ -18,7 +18,9 @@
 #define errno_hpp__93D8479F_215F_49FB_823A_D7096D3A92B3
 #pragma once
 //------------------------------------------------------------------------------
+#include <boost/assert.hpp>
 #include <boost/config.hpp>
+#include <boost/config_ex.hpp>
 
 #ifndef NDEBUG
 #include "detail/thread_singleton.hpp"

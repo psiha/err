@@ -24,6 +24,12 @@
 #include <exception>
 #include <type_traits>
 #include <utility>
+
+#ifdef __APPLE__
+#include <Availability.h>
+#include <TargetConditionals.h>
+#endif
+
 //------------------------------------------------------------------------------
 namespace boost
 {
@@ -80,7 +86,7 @@ namespace detail
 {
     inline auto uncaught_exceptions() noexcept
     {
-    #if __cpp_lib_uncaught_exceptions
+    #if ( __cpp_lib_uncaught_exceptions && !defined( __APPLE__ ) ) || ( __cpp_lib_uncaught_exceptions && defined( __APPLE__ ) && defined( TARGET_OS_IPHONE ) && __IPHONE_OS_VERSION_MIN_REQUIRED >= __IPHONE_10_0 )
         return std::uncaught_exceptions();
     #else
         return std::uncaught_exception();
