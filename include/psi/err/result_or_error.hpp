@@ -3,7 +3,7 @@
 /// \file result_or_error.hpp
 /// -------------------------
 ///
-/// Copyright (c) Domagoj Saric 2015 - 2020.
+/// Copyright (c) Domagoj Saric 2015 - 2024.
 ///
 /// Use, modification and distribution is subject to the
 /// Boost Software License, Version 1.0.
@@ -26,7 +26,7 @@
 #include <type_traits>
 #include <utility>
 //------------------------------------------------------------------------------
-namespace boost
+namespace psi
 {
 //------------------------------------------------------------------------------
 namespace err
@@ -34,14 +34,14 @@ namespace err
 //------------------------------------------------------------------------------
 
 struct no_err_t {};
-static no_err_t constexpr no_err    = {};
-static no_err_t constexpr success   = {};
-static no_err_t constexpr succeeded = {};
+inline no_err_t constexpr no_err    = {};
+inline no_err_t constexpr success   = {};
+inline no_err_t constexpr succeeded = {};
 
 struct an_err_t {};
-static an_err_t constexpr an_err  = {};
-static an_err_t constexpr failure = {};
-static an_err_t constexpr failed  = {};
+inline an_err_t constexpr an_err  = {};
+inline an_err_t constexpr failure = {};
+inline an_err_t constexpr failed  = {};
 
 
 template <class Result, class Error>
@@ -68,8 +68,8 @@ using compressed_result_error_variant =
 template <class Result, class Error>
 class fallible_result;
 
-template <class Result, class Error, typename = void>
-class [[nodiscard]] result_or_error
+template <class Result, class Error>
+class [[ nodiscard ]] result_or_error
 {
 public:
     /// \note Be liberal with the constructor argument type in order to allow
@@ -82,13 +82,13 @@ public:
     /// result' constructor is invoked.
     ///                                       (17.02.2016.) (Domagoj Saric)
     // todo: variadic arguments
-    template <typename Source>                                result_or_error( Source && BOOST_RESTRICTED_REF result, typename std::enable_if<std::is_constructible<Result, Source &&>::value>::type const * = nullptr ) noexcept( std::is_nothrow_constructible<Result, Source &&>::value ) : succeeded_( true  ), inspected_( false ), result_( std::forward<Source>( result ) ) {}
-    template <typename Source> BOOST_ATTRIBUTES( BOOST_COLD ) result_or_error( Source && BOOST_RESTRICTED_REF error , typename std::enable_if<std::is_constructible<Error , Source &&>::value>::type const * = nullptr ) noexcept( std::is_nothrow_constructible<Error , Source &&>::value ) : succeeded_( false ), inspected_( false ), error_ ( std::forward<Source>( error  ) ) {}
+    template <typename Source> requires std::is_constructible_v<Result, Source &&>                                result_or_error( Source && __restrict result ) noexcept( std::is_nothrow_constructible<Result, Source &&>::value ) : succeeded_( true  ), inspected_( false ), result_( std::forward<Source>( result ) ) {}
+    template <typename Source> requires std::is_constructible_v<Error , Source &&> BOOST_ATTRIBUTES( BOOST_COLD ) result_or_error( Source && __restrict error  ) noexcept( std::is_nothrow_constructible<Error , Source &&>::value ) : succeeded_( false ), inspected_( false ), error_ ( std::forward<Source>( error  ) ) {}
 
     result_or_error( Result && result ) : succeeded_( true  ), inspected_( false ), result_( std::forward< Result >( result ) ) {}
     result_or_error( Error  && error  ) : succeeded_( false ), inspected_( false ), error_ ( std::forward< Error  >( error  ) ) {}
 
-    result_or_error( result_or_error && BOOST_RESTRICTED_REF other )
+    result_or_error( result_or_error && __restrict other )
         noexcept
         (
             std::is_nothrow_move_constructible<Result>::value &&
@@ -239,12 +239,13 @@ private: friend class fallible_result<Result, Error>;
 ////////////////////////////////////////////////////////////////////////////////
 
 template <class Result, class Error>
-class [[nodiscard]] result_or_error<Result, Error, typename std::enable_if<compressed_result_error_variant<Result, Error>::value>::type>
+requires compressed_result_error_variant<Result, Error>::value
+class [[ nodiscard ]] result_or_error<Result, Error>
 {
 public:
     template <typename Source>
-    result_or_error( Source          && BOOST_RESTRICTED_REF result ) noexcept( std::is_nothrow_constructible     <Result, Source &&>::value ) : result_( std::forward<Source>( result ) ), inspected_( false ) {}
-    result_or_error( result_or_error && BOOST_RESTRICTED_REF other  ) noexcept( std::is_nothrow_move_constructible<Result           >::value )
+    result_or_error( Source          && __restrict result ) noexcept( std::is_nothrow_constructible     <Result, Source &&>::value ) : result_( std::forward<Source>( result ) ), inspected_( false ) {}
+    result_or_error( result_or_error && __restrict other  ) noexcept( std::is_nothrow_move_constructible<Result           >::value )
         :
         result_   ( std::move( other.result_ ) ),
         inspected_( false                      )
@@ -331,21 +332,21 @@ protected:
 ////////////////////////////////////////////////////////////////////////////////
 
 template <class Error>
-using void_or_error = result_or_error<void, Error, void>;
+using void_or_error = result_or_error<void, Error>;
 
 template <class Error>
-class [[nodiscard]] result_or_error<void, Error, void>
+class [[ nodiscard ]] result_or_error<void, Error>
 {
 public:
     template <typename Source>
     BOOST_ATTRIBUTES( BOOST_COLD )
-    result_or_error( Source && BOOST_RESTRICTED_REF error, typename std::enable_if<!std::is_same<Source, fallible_result<void, Error>>::value>::type const * = nullptr )
+    result_or_error( Source && __restrict error, typename std::enable_if<!std::is_same<Source, fallible_result<void, Error>>::value>::type const * = nullptr )
         noexcept( std::is_nothrow_constructible<Error, Source &&>::value )
         : error_( std::forward<Source>( error ) ), succeeded_( false ), inspected_( false ) {}
 
     result_or_error( no_err_t ) noexcept : succeeded_( true ), inspected_( false ) {}
 
-    result_or_error( result_or_error && BOOST_RESTRICTED_REF other ) noexcept( std::is_nothrow_move_constructible<Error>::value )
+    result_or_error( result_or_error && __restrict other ) noexcept( std::is_nothrow_move_constructible<Error>::value )
         : succeeded_( other.succeeded() ), inspected_( false )
     {
         if ( BOOST_UNLIKELY( !succeeded_ ) )
@@ -377,6 +378,8 @@ public:
                       bool inspected() const noexcept {                    return BOOST_LIKELY( inspected_ ); }
                       bool succeeded() const noexcept { auto & __restrict inspected( inspected_ ); inspected = true; return BOOST_LIKELY( succeeded_ ); }
     explicit operator bool          () const noexcept {                    return succeeded()               ; }
+
+    void assume_succeeded() && noexcept { BOOST_VERIFY( succeeded() ); }
 
 BOOST_OPTIMIZE_FOR_SIZE_BEGIN()
 #ifndef BOOST_NO_EXCEPTIONS //...mrmlj...kill this duplication...
@@ -435,20 +438,20 @@ protected:
 }; // class result_or_error 'void result' specialisation
 
 
-template <typename Result, typename Error, typename Dummy> bool operator==( result_or_error<Result, Error, Dummy> const & result, no_err_t ) noexcept { return  result.succeeded(); }
-template <typename Result, typename Error, typename Dummy> bool operator==( result_or_error<Result, Error, Dummy> const & result, an_err_t ) noexcept { return !result.succeeded(); }
-template <typename Result, typename Error, typename Dummy> bool operator!=( result_or_error<Result, Error, Dummy> const & result, no_err_t ) noexcept { return !result.succeeded(); }
-template <typename Result, typename Error, typename Dummy> bool operator!=( result_or_error<Result, Error, Dummy> const & result, an_err_t ) noexcept { return  result.succeeded(); }
+template <typename Result, typename Error> bool operator==( result_or_error<Result, Error> const & result, no_err_t ) noexcept { return  result.succeeded(); }
+template <typename Result, typename Error> bool operator==( result_or_error<Result, Error> const & result, an_err_t ) noexcept { return !result.succeeded(); }
+template <typename Result, typename Error> bool operator!=( result_or_error<Result, Error> const & result, no_err_t ) noexcept { return !result.succeeded(); }
+template <typename Result, typename Error> bool operator!=( result_or_error<Result, Error> const & result, an_err_t ) noexcept { return  result.succeeded(); }
 
-#define BOOST_ERR_PROPAGATE_FAILURE( expression ) \
+#define PSI_ERR_PROPAGATE_FAILURE( expression ) \
     { auto const result( expression ); if ( !result ) result.error(); }
 
-#define BOOST_ERR_SAVE_RESULT_OR_PROPAGATE_FAILURE( result, expression ) \
+#define PSI_ERR_SAVE_RESULT_OR_PROPAGATE_FAILURE( result, expression ) \
     auto result( expression ); if ( !result ) result.error();
 
 //------------------------------------------------------------------------------
 } // namespace err
 //------------------------------------------------------------------------------
-} // namespace boost
+} // namespace psi
 //------------------------------------------------------------------------------
 #endif // result_or_error_hpp

@@ -31,7 +31,7 @@
 #endif
 
 //------------------------------------------------------------------------------
-namespace boost
+namespace psi
 {
 //------------------------------------------------------------------------------
 namespace err
@@ -61,14 +61,18 @@ Error && make_exception( Error && error ) { return std::forward<Error>( error );
 
 
 template <class Exception>
-[[noreturn]] BOOST_ATTRIBUTES( BOOST_COLD )
-typename std::enable_if<!std::is_fundamental<Exception>::value>::type
-BOOST_CC_REG throw_exception( Exception && exception ) { BOOST_THROW_EXCEPTION( std::forward<Exception>( exception ) ); }
+[[ noreturn ]] BOOST_ATTRIBUTES( BOOST_COLD )
+void BOOST_CC_REG throw_exception( Exception && exception ) requires( !std::is_fundamental_v<Exception> )
+{
+    if constexpr ( std::convertible_to< Exception, std::exception const & > )
+        BOOST_THROW_EXCEPTION( std::forward<Exception>( exception ) );
+    else
+        throw std::forward<Exception>( exception );
+}
 
 template <typename Exception>
 [[noreturn]] BOOST_ATTRIBUTES( BOOST_COLD )
-typename std::enable_if<std::is_fundamental<Exception>::value>::type
-BOOST_CC_REG throw_exception( Exception const exception ) { BOOST_THROW_EXCEPTION( exception ); }
+void BOOST_CC_REG throw_exception( Exception const exception ) requires( std::is_fundamental_v<Exception> ) { throw exception; }
 
 template <typename Error>
 [[noreturn]] BOOST_ATTRIBUTES( BOOST_COLD )
@@ -76,7 +80,7 @@ void BOOST_CC_REG make_and_throw_exception( Error && error ) { throw_exception( 
 
 template <typename Error>
 [[noreturn]] BOOST_ATTRIBUTES( BOOST_COLD )
-void BOOST_CC_REG make_and_throw_exception() { make_and_throw_exception<Error>( Error() ); }
+void BOOST_CC_REG make_and_throw_exception() { make_and_throw_exception<Error>( Error{} ); }
 
 template <typename Error>
 BOOST_ATTRIBUTES( BOOST_COLD )
@@ -118,6 +122,6 @@ BOOST_OPTIMIZE_FOR_SIZE_END()
 //------------------------------------------------------------------------------
 } // namespace err
 //------------------------------------------------------------------------------
-} // namespace boost
+} // namespace psi
 //------------------------------------------------------------------------------
 #endif // exceptions_hpp

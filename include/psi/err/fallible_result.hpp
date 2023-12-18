@@ -38,7 +38,7 @@
 #include <type_traits>
 #include <utility>
 //------------------------------------------------------------------------------
-namespace boost
+namespace psi
 {
 //------------------------------------------------------------------------------
 namespace err
@@ -154,7 +154,7 @@ class fallible_result
 {
 public:
     template <typename ... T>
-    fallible_result( T && BOOST_RESTRICTED_REF ... argument ) noexcept( std::is_nothrow_constructible<result_or_error<Result, Error>, T &&...>::value )
+    fallible_result( T && __restrict ... argument ) noexcept( std::is_nothrow_constructible<result_or_error<Result, Error>, T &&...>::value )
         : result_or_error_( std::forward<T>( argument )... )
     {
     #ifndef NDEBUG
@@ -163,7 +163,7 @@ public:
         BOOST_ASSUME( !result_or_error_.inspected_ );
     }
 
-    fallible_result( fallible_result && BOOST_RESTRICTED_REF other ) noexcept( std::is_nothrow_move_constructible<result_or_error<Result, Error>>::value )
+    fallible_result( fallible_result && __restrict other ) noexcept( std::is_nothrow_move_constructible<result_or_error<Result, Error>>::value )
         : result_or_error_( std::move( std::move( other ).as_result_or_error() ) )
     {
     #ifndef NDEBUG
@@ -241,7 +241,7 @@ public:
 
 public:
     template <typename ... T>
-    fallible_result( T && BOOST_RESTRICTED_REF ... argument ) noexcept( std::is_nothrow_constructible<result, T && ...>::value )
+    fallible_result( T && __restrict ... argument ) noexcept( std::is_nothrow_constructible<result, T && ...>::value )
         : void_or_error_( std::forward<T>( argument )... )
     {
         BOOST_ASSERT_MSG
@@ -252,7 +252,7 @@ public:
         BOOST_ASSUME( !void_or_error_.inspected_ );
     }
 
-    fallible_result( fallible_result && BOOST_RESTRICTED_REF other ) noexcept( std::is_nothrow_move_constructible<result>::value )
+    fallible_result( fallible_result && __restrict other ) noexcept( std::is_nothrow_move_constructible<result>::value )
         : void_or_error_( std::move( std::move( other ).operator result &&() ) )
     {
         BOOST_ASSERT_MSG
@@ -313,6 +313,6 @@ using infallible_result = T;
 //------------------------------------------------------------------------------
 } // namespace err
 //------------------------------------------------------------------------------
-} // namespace boost
+} // namespace psi
 //------------------------------------------------------------------------------
 #endif // fallible_result_hpp
