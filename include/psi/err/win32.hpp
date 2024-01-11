@@ -3,7 +3,7 @@
 /// \file win32.hpp
 /// ---------------
 ///
-/// Copyright (c) Domagoj Saric 2015 - 2018.
+/// Copyright (c) Domagoj Saric 2015 - 2024.
 ///
 /// Use, modification and distribution is subject to the
 /// Boost Software License, Version 1.0.
@@ -14,10 +14,9 @@
 ///
 ////////////////////////////////////////////////////////////////////////////////
 //------------------------------------------------------------------------------
-#ifndef win32_hpp__ER092463_ED23_445A_9C11_5AA500DC59A8
-#define win32_hpp__ER092463_ED23_445A_9C11_5AA500DC59A8
 #pragma once
-//------------------------------------------------------------------------------
+
+#include <boost/assert.hpp>
 #include <boost/config_ex.hpp>
 #include <boost/winapi/error_handling.hpp>
 #include <boost/winapi/get_last_error.hpp>
@@ -30,19 +29,13 @@
     #define NOMINMAX
 #endif // NOMINMAX
 #include <windows.h>
-
-#ifdef __bound
-#   undef __bound
-#endif
+#undef __bound
 
 #include <cstdint>
 #include <cstring>  // needed for std::strlen
 #include <stdexcept>
 //------------------------------------------------------------------------------
-namespace psi
-{
-//------------------------------------------------------------------------------
-namespace err
+namespace psi::err
 {
 //------------------------------------------------------------------------------
 
@@ -62,18 +55,18 @@ struct last_win32_error
     static value_type const no_error = 0;
 
     BOOST_ATTRIBUTES( BOOST_COLD, BOOST_EXCEPTIONLESS, BOOST_RESTRICTED_FUNCTION_L2, BOOST_WARN_UNUSED_RESULT )
-    static value_type BOOST_CC_REG get(                        ) noexcept { return   boost::winapi  ::GetLastError(       ); }
+    static value_type get(                        ) noexcept { return   boost::winapi  ::GetLastError(       ); }
     BOOST_ATTRIBUTES( BOOST_COLD, BOOST_EXCEPTIONLESS )
-    static void       BOOST_CC_REG set( value_type const value ) noexcept { return /*boost::winapi*/::SetLastError( value ); }
+    static void       set( value_type const value ) noexcept { return /*boost::winapi*/::SetLastError( value ); }
 
     BOOST_ATTRIBUTES( BOOST_MINSIZE, BOOST_EXCEPTIONLESS )
-    static void       BOOST_CC_REG clear() noexcept { return set( ERROR_SUCCESS ); }
+    static void       clear() noexcept { return set( ERROR_SUCCESS ); }
 
     BOOST_ATTRIBUTES( BOOST_MINSIZE, BOOST_RESTRICTED_FUNCTION_L2, BOOST_EXCEPTIONLESS, BOOST_WARN_UNUSED_RESULT )
-    static bool       BOOST_CC_REG is( value_type const value ) noexcept { return get() == value; }
+    static bool       is( value_type const value ) noexcept { return get() == value; }
     template <value_type value>
     BOOST_ATTRIBUTES( BOOST_MINSIZE, BOOST_RESTRICTED_FUNCTION_L2, BOOST_EXCEPTIONLESS, BOOST_WARN_UNUSED_RESULT )
-    static bool       BOOST_CC_REG is() noexcept { return is( value ); }
+    static bool       is() noexcept { return is( value ); }
 
     /// \todo Interferes with result_or_error constructor SFINAE selection
     /// for Result types constructible from value_type if implicit. Cleanup...
@@ -92,17 +85,17 @@ struct last_win32_error
    ~last_win32_error() noexcept { BOOST_ASSERT_MSG( instance_counter-- <= 2, "More than one last_win32_error instance detected (the last one overrides the previous ones)." ); }
     last_win32_error( last_win32_error const  & ) = default; // delete;
     last_win32_error( last_win32_error       && ) = default;
-    static BOOST_THREAD_LOCAL_POD std::uint8_t instance_counter;
+    static thread_local std::uint8_t instance_counter;
 #endif // NDEBUG
 }; // struct last_win32_error
 
 #if !defined( NDEBUG ) && 0 // disabled (no longer stateless)
-BOOST_OVERRIDABLE_MEMBER_SYMBOL BOOST_THREAD_LOCAL_POD std::uint8_t last_win32_error::instance_counter( 0 );
+inline thread_local std::uint8_t last_win32_error::instance_counter( 0 );
 #endif // NDEBUG
 
 
 inline BOOST_ATTRIBUTES( BOOST_COLD )
-std::runtime_error BOOST_CC_REG make_exception( last_win32_error const error )
+std::runtime_error make_exception( last_win32_error const error )
 {
     using namespace boost::winapi;
 
@@ -133,8 +126,5 @@ std::runtime_error BOOST_CC_REG make_exception( last_win32_error const error )
 BOOST_OPTIMIZE_FOR_SIZE_END()
 
 //------------------------------------------------------------------------------
-} // namespace err
+} // namespace psi::err
 //------------------------------------------------------------------------------
-} // namespace psi
-//------------------------------------------------------------------------------
-#endif // win32_hpp
