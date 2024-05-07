@@ -46,7 +46,6 @@ BOOST_OPTIMIZE_FOR_SIZE_BEGIN()
 
 // ERROR_NOT_ENOUGH_MEMORY vs ERROR_OUTOFMEMORY
 // http://unixwiz.net/techtips/not-enough-codes.html
-// http://comp.os.ms-windows.programmer..narkive.com/UqDGBM2n/what-is-the-difference-between-error-not-enough-memory-and-error-outofmemory
 
 struct last_win32_error
 {
@@ -74,9 +73,9 @@ struct last_win32_error
     explicit
     operator value_type() const noexcept { return value/*get()*/; }
 
-    /// \note In order to support multiple/coexisting last_errno objects (i.e.
+    /// \note In order to support multiple/coexisting last-err objects (i.e.
     /// multiple fallible_results saved to result_or_error objects) we have to
-    /// add state (i.e. save the current errno on construction).
+    /// add state (i.e. save the current error on construction).
     ///                                       (28.02.2016.) (Domagoj Saric)
     value_type const value = last_win32_error::get();
 
@@ -110,11 +109,11 @@ std::runtime_error make_exception( last_win32_error const error )
             nullptr, error.value, 0, message, _countof( message ), 0
         )
     );
-    BOOST_ASSERT( message_length                           );
 #ifdef __clang__
 #   pragma clang diagnostic push
 #   pragma clang diagnostic ignored "-Wassume"
 #endif
+    BOOST_ASSUME( message_length                           );
     BOOST_ASSUME( std::strlen( message ) == message_length );
 #ifdef __clang__
 #   pragma clang diagnostic pop
