@@ -3,7 +3,7 @@
 /// \file fallible_result.hpp
 /// -------------------------
 ///
-/// Copyright (c) Domagoj Saric 2015 - 2019.
+/// Copyright (c) Domagoj Saric 2015 - 2024.
 ///
 /// Use, modification and distribution is subject to the
 /// Boost Software License, Version 1.0.
@@ -14,18 +14,14 @@
 ///
 ////////////////////////////////////////////////////////////////////////////////
 //------------------------------------------------------------------------------
-#ifndef fallible_result_hpp__568DC1C1_A422_4EE6_9993_8FC98EE846C8
-#define fallible_result_hpp__568DC1C1_A422_4EE6_9993_8FC98EE846C8
 #pragma once
-//------------------------------------------------------------------------------
+
 #include "result_or_error.hpp"
 
 #include <boost/assert.hpp>
 #include <boost/config.hpp>
 
 #ifndef NDEBUG
-#include "detail/thread_singleton.hpp"
-
 #include <exception>
 #ifdef __APPLE__
 #include <Availability.h>
@@ -38,10 +34,7 @@
 #include <type_traits>
 #include <utility>
 //------------------------------------------------------------------------------
-namespace psi
-{
-//------------------------------------------------------------------------------
-namespace err
+namespace psi::err
 {
 //------------------------------------------------------------------------------
 
@@ -114,21 +107,12 @@ namespace detail
 
         std::uint8_t live_void_instance_counter = 0;
 
-        static fallible_result_sanitizer & singleton() { return thread_singleton<fallible_result_sanitizer>::instance(); }
+        static thread_local fallible_result_sanitizer singleton;
 
-        static void    add_instance(                      ) { singleton().   add_instance_aux(           ); }
-        static void remove_instance( bool const inspected ) { singleton().remove_instance_aux( inspected ); }
+        static void    add_instance(                      ) { singleton.   add_instance_aux(           ); }
+        static void remove_instance( bool const inspected ) { singleton.remove_instance_aux( inspected ); }
 
     private:
-        static auto uncaught_exceptions() noexcept
-        {
-        #if ( __cpp_lib_uncaught_exceptions && !defined( __APPLE__ ) ) || ( __cpp_lib_uncaught_exceptions && defined( __APPLE__ ) && defined( TARGET_OS_IPHONE ) && __IPHONE_OS_VERSION_MIN_REQUIRED >= __IPHONE_10_0 )
-            return std::uncaught_exceptions();
-        #else
-            return std::uncaught_exception();
-        #endif // __cpp_lib_uncaught_exceptions
-        }
-
         void add_instance_aux() { ++live_instance_counter; }
 
         void remove_instance_aux( bool const inspected )
@@ -139,13 +123,15 @@ namespace detail
             BOOST_ASSERT_MSG
             (
                 at_least_one_inspected ||
-                live_instance_counter  ||  // there are still live fallible_results (allow that one of those will be inspected even if none have been so far)
-                uncaught_exceptions(), // a '3rd party' exception caused early exit
+                live_instance_counter  ||   // there are still live fallible_results (allow that one of those will be inspected even if none have been so far)
+                std::uncaught_exceptions(), // a '3rd party' exception caused early exit
                 "Uninspected fallible_result<T>."
             );
             at_least_one_inspected &= ( live_instance_counter != 0 );
         }
     }; // struct fallible_result_sanitizer
+
+    inline thread_local fallible_result_sanitizer fallible_result_sanitizer::singleton;
 } // namespace detail
 #endif // NDEBUG
 
@@ -246,7 +232,7 @@ public:
     {
         BOOST_ASSERT_MSG
         (
-            detail::fallible_result_sanitizer::singleton().live_void_instance_counter++ == 0,
+            detail::fallible_result_sanitizer::singleton.live_void_instance_counter++ == 0,
             "More than one fallible_result<void> instance detected"
         );
         BOOST_ASSUME( !void_or_error_.inspected_ );
@@ -255,11 +241,15 @@ public:
     fallible_result( fallible_result && __restrict other ) noexcept( std::is_nothrow_move_constructible<result>::value )
         : void_or_error_( std::move( std::move( other ).operator result &&() ) )
     {
+#   ifndef NDEBUG
+        BOOST_ASSERT( !other.moved_from_ );
+        other.moved_from_ = true;
         BOOST_ASSERT_MSG
         (
-            detail::fallible_result_sanitizer::singleton().live_void_instance_counter++ == 0,
+            detail::fallible_result_sanitizer::singleton.live_void_instance_counter++ == /*other destructor yet has to be called*/1,
             "More than one fallible_result<void> instance detected"
         );
+#   endif
         BOOST_ASSUME( !void_or_error_.inspected_ );
     }
 
@@ -268,7 +258,7 @@ public:
     {
         BOOST_ASSERT_MSG
         (
-            detail::fallible_result_sanitizer::singleton().live_void_instance_counter-- == 1,
+            detail::fallible_result_sanitizer::singleton.live_void_instance_counter-- == 1 + moved_from_,
             "More than one fallible_result<void> instance detected"
         );
         void_or_error_.throw_if_uninspected_error();
@@ -298,6 +288,9 @@ private:
 
 private: friend result;
     result void_or_error_;
+#ifndef NDEBUG
+    bool moved_from_{ false };
+#endif
 }; // class fallible_result<void, Error>
 
 
@@ -311,8 +304,5 @@ template <typename T>
 using infallible_result = T;
 
 //------------------------------------------------------------------------------
-} // namespace err
+} // namespace psi::err
 //------------------------------------------------------------------------------
-} // namespace psi
-//------------------------------------------------------------------------------
-#endif // fallible_result_hpp

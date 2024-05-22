@@ -14,27 +14,18 @@
 ///
 ////////////////////////////////////////////////////////////////////////////////
 //------------------------------------------------------------------------------
-#ifndef errno_hpp__93D8479F_215F_49FB_823A_D7096D3A92B3
-#define errno_hpp__93D8479F_215F_49FB_823A_D7096D3A92B3
 #pragma once
-//------------------------------------------------------------------------------
+
 #include <boost/assert.hpp>
 #include <boost/config.hpp>
 #include <boost/config_ex.hpp>
-
-#ifndef NDEBUG
-#include "detail/thread_singleton.hpp"
-#endif // !NDEBUG
 
 #include <cerrno>
 #include <cstdint>
 #include <cstring>
 #include <stdexcept>
 //------------------------------------------------------------------------------
-namespace psi
-{
-//------------------------------------------------------------------------------
-namespace err
+namespace psi::err
 {
 //------------------------------------------------------------------------------
 
@@ -78,20 +69,13 @@ struct last_errno
     value_type const value = last_errno::get();
 
 #if !defined( NDEBUG ) && 0 // disabled (no longer stateless)
-    last_errno() noexcept { BOOST_ASSERT_MSG( ++instance_counter() == 1, "More than one last_errno instance detected (the last one overrides the previous ones)." ); }
-   ~last_errno() noexcept { BOOST_ASSERT_MSG( --instance_counter() == 0, "More than one last_errno instance detected (the last one overrides the previous ones)." ); }
-    std::uint8_t & instance_counter() { return detail::thread_singleton<std::uint8_t, last_errno>::instance(); }
+    inline static thread_local std::uint8_t instance_counter{ 0 };
+    last_errno() noexcept { BOOST_ASSERT_MSG( ++instance_counter == 1, "More than one last_errno instance detected (the last one overrides the previous ones)." ); }
+   ~last_errno() noexcept { BOOST_ASSERT_MSG( --instance_counter == 0, "More than one last_errno instance detected (the last one overrides the previous ones)." ); }
     // debugging aid (for 'live' errno monitoring)
-    static /*thread_local*/ value_type const volatile & current_value; //...mrmlj...Apple still (OSX10.11/iOS9.1) hasn't implemented C++ TLS ...
+    inline static thread_local value_type const volatile & current_value = errno;
 #endif // NDEBUG
 }; // struct last_errno
-
-#if !defined( NDEBUG ) && 0 // disabled (no longer stateless)
-/// \note GCC 4.9 from Android NDK 10e ICEs if BOOST_OVERRIDABLE_SYMBOL is
-/// put 'in the front' and Clang does not like it at the end...
-///                                           (16.12.2015.) (Domagoj Saric)
-/*thread_local*/ last_errno::value_type const volatile & last_errno::current_value  = errno;
-#endif // NDEBUG
 
 
 #if defined( BOOST_MSVC )
@@ -109,8 +93,5 @@ std::runtime_error BOOST_CC_REG make_exception( last_errno const error )
 #endif // BOOST_MSVC
 
 //------------------------------------------------------------------------------
-} // namespace err
+} // namespace psi::err
 //------------------------------------------------------------------------------
-} // namespace psi
-//------------------------------------------------------------------------------
-#endif // errno_hpp
