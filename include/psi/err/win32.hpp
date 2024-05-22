@@ -114,7 +114,9 @@ std::runtime_error make_exception( last_win32_error const error )
 #   pragma clang diagnostic ignored "-Wassume"
 #endif
     BOOST_ASSUME( message_length                           );
+#ifndef _MSC_VER // VS 17.10.0 MSVC ICE
     BOOST_ASSUME( std::strlen( message ) == message_length );
+#endif
 #ifdef __clang__
 #   pragma clang diagnostic pop
 #endif
