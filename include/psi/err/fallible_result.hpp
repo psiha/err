@@ -107,7 +107,7 @@ namespace detail
 
         std::uint8_t live_void_instance_counter = 0;
 
-        static thread_local fallible_result_sanitizer singleton;
+        static BOOST_THREAD_LOCAL_POD fallible_result_sanitizer singleton;
 
         static void    add_instance(                      ) { singleton.   add_instance_aux(           ); }
         static void remove_instance( bool const inspected ) { singleton.remove_instance_aux( inspected ); }
@@ -131,7 +131,7 @@ namespace detail
         }
     }; // struct fallible_result_sanitizer
 
-    inline thread_local fallible_result_sanitizer fallible_result_sanitizer::singleton;
+    inline BOOST_THREAD_LOCAL_POD fallible_result_sanitizer fallible_result_sanitizer::singleton;
 } // namespace detail
 #endif // NDEBUG
 
