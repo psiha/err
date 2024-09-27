@@ -82,10 +82,10 @@ namespace psi::err
 /// partial specialisation does not allow multiple coexisting instances.
 /// [2] This does mean that construction of other parameters can proceed even
 /// if a previous one has already failed but this is actually not that different
-/// from what you have to expect anyway precisely because of the undefined order
+/// from what has to be expected anyway precisely because of the undefined order
 /// in which parameters are constructed. If this behaviour is undesired/strictly
 /// prohibited it can be solved two ways:
-/// * on the 'library' side - Boost.Err/fallible_result can provide a
+/// * on the 'library' side - Psi.Err/fallible_result can provide a
 ///   'failed_result_pending()'-like function (the equivalent of
 ///   std::uncaught_exception()) which a function returning a fallible_result
 ///   can check and abort/return early if necessary
@@ -136,7 +136,7 @@ namespace detail
 #endif // NDEBUG
 
 template <class Result, class Error>
-class fallible_result
+class [[ clang::trivial_abi ]] fallible_result
 {
 public:
     template <typename ... T>
@@ -220,7 +220,7 @@ template <class Error> using possible      = fallible_result<void, Error>;
 template <class Error> using fallible_with = fallible_result<void, Error>;
 
 template <class Error>
-class fallible_result<void, Error> //...mrmlj...kill the duplication...
+class [[ clang::trivial_abi ]] fallible_result<void, Error> //...mrmlj...kill the duplication...
 {
 public:
     using result = result_or_error<void, Error>;

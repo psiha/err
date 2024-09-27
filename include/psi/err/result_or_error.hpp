@@ -14,8 +14,6 @@
 ///
 ////////////////////////////////////////////////////////////////////////////////
 //------------------------------------------------------------------------------
-#ifndef result_or_error_hpp__3A4D7BDA_D64A_456B_AA06_82E407BB8EAB
-#define result_or_error_hpp__3A4D7BDA_D64A_456B_AA06_82E407BB8EAB
 #pragma once
 //------------------------------------------------------------------------------
 #include "exceptions.hpp"
@@ -26,10 +24,7 @@
 #include <type_traits>
 #include <utility>
 //------------------------------------------------------------------------------
-namespace psi
-{
-//------------------------------------------------------------------------------
-namespace err
+namespace psi::err
 {
 //------------------------------------------------------------------------------
 
@@ -69,7 +64,7 @@ template <class Result, class Error>
 class fallible_result;
 
 template <class Result, class Error>
-class [[ nodiscard ]] result_or_error
+class [[ nodiscard, clang::trivial_abi ]] result_or_error
 {
 public:
     /// \note Be liberal with the constructor argument type in order to allow
@@ -240,7 +235,7 @@ private: friend class fallible_result<Result, Error>;
 
 template <class Result, class Error>
 requires compressed_result_error_variant<Result, Error>::value
-class [[ nodiscard ]] result_or_error<Result, Error>
+class [[ nodiscard, clang::trivial_abi ]] result_or_error<Result, Error>
 {
 public:
     template <typename Source>
@@ -335,7 +330,7 @@ template <class Error>
 using void_or_error = result_or_error<void, Error>;
 
 template <class Error>
-class [[ nodiscard ]] result_or_error<void, Error>
+class [[ nodiscard, clang::trivial_abi ]] result_or_error<void, Error>
 {
 public:
     template <typename Source>
@@ -450,8 +445,5 @@ template <typename Result, typename Error> bool operator!=( result_or_error<Resu
     auto result( expression ); if ( !result ) result.error();
 
 //------------------------------------------------------------------------------
-} // namespace err
+} // namespace psi::err
 //------------------------------------------------------------------------------
-} // namespace psi
-//------------------------------------------------------------------------------
-#endif // result_or_error_hpp
