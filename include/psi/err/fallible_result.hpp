@@ -174,8 +174,8 @@ public:
     result_or_error<Result, Error> && as_result_or_error() && noexcept { BOOST_ASSUME( !result_or_error_.inspected_ ); std::move( *this ).ignore_failure(); return std::move( result_or_error_ ); }
     result_or_error<Result, Error> && operator()        () && noexcept { return std::move( *this ).as_result_or_error(); }
 
-    operator result_or_error<Result, Error> && () && noexcept { return std::move( *this ).as_result_or_error(); }
-    operator Result                         && () &&          { return std::move( result() ); }
+    operator result_or_error<Result, Error> &&() && noexcept { return std::move( *this ).as_result_or_error(); }
+    operator Result                         &&() &&          { return std::move( result() ); }
 
                                                          Result && operator *  () && { return  result(); }
     BOOST_ATTRIBUTES( BOOST_RESTRICTED_FUNCTION_RETURN ) Result *  operator -> () && { return &result(); }
@@ -239,7 +239,7 @@ public:
     }
 
     fallible_result( fallible_result && __restrict other ) noexcept( std::is_nothrow_move_constructible<result>::value )
-        : void_or_error_( std::move( std::move( other ).operator result &&() ) )
+        : void_or_error_( std::move( other ).operator result &&() )
     {
 #   ifndef NDEBUG
         BOOST_ASSERT( !other.moved_from_ );
@@ -268,13 +268,13 @@ public:
 
     result && operator()() && noexcept { return std::move( *this ); }
 
-    operator result && () && noexcept { static_cast<fallible_result &&>( *this ).ignore_failure(); return std::move( void_or_error_ ); }
+    operator result &&() && noexcept { return std::move( void_or_error_ ); }
 
     bool succeeded() && noexcept { return void_or_error_.succeeded(); }
 
     explicit operator bool() && noexcept { return std::move( *this ).succeeded(); }
 
-    void ignore_failure() && noexcept { static_cast<fallible_result &&>( *this ).succeeded(); }
+    void ignore_failure() && noexcept { std::move( *this ).succeeded(); }
 
 private:
     void * operator new     (         std::size_t                         ) = delete;

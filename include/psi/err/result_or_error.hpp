@@ -371,7 +371,7 @@ public:
     Error const & error() const noexcept { BOOST_ASSERT_MSG( inspected() && !*this, "Querying the error of a (possibly) succeeded operation." ); return error_; }
 
                       bool inspected() const noexcept {                    return BOOST_LIKELY( inspected_ ); }
-                      bool succeeded() const noexcept { auto & __restrict inspected( inspected_ ); inspected = true; return BOOST_LIKELY( succeeded_ ); }
+                      bool succeeded() const noexcept { inspected_ = true; return BOOST_LIKELY( succeeded_ ); }
     explicit operator bool          () const noexcept {                    return succeeded()               ; }
 
     void assume_succeeded() && noexcept { BOOST_VERIFY( succeeded() ); }
