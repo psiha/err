@@ -161,7 +161,7 @@ public:
 
     fallible_result( fallible_result const & ) = delete;
 
-    BOOST_ATTRIBUTES( BOOST_MINSIZE )
+    BOOST_ATTRIBUTES( BOOST_MINSIZE ) BOOST_FORCEINLINE
     ~fallible_result() noexcept( false )
     {
     #ifndef NDEBUG
@@ -253,7 +253,7 @@ public:
         BOOST_ASSUME( !void_or_error_.inspected_ );
     }
 
-    BOOST_OPTIMIZE_FOR_SIZE_BEGIN()
+    BOOST_OPTIMIZE_FOR_SIZE_BEGIN() BOOST_FORCEINLINE
     ~fallible_result() noexcept( false )
     {
         BOOST_ASSERT_MSG
