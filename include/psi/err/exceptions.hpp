@@ -64,7 +64,7 @@ template <class Exception>
 [[ noreturn ]] BOOST_ATTRIBUTES( BOOST_COLD )
 void BOOST_CC_REG throw_exception( Exception && exception ) requires( !std::is_fundamental_v<Exception> )
 {
-    if constexpr ( std::convertible_to< Exception, std::exception const & > )
+    if constexpr ( std::convertible_to<Exception, std::exception const &> )
         BOOST_THROW_EXCEPTION( std::forward<Exception>( exception ) );
     else
         throw std::forward<Exception>( exception );
