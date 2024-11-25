@@ -149,19 +149,9 @@ public:
         BOOST_ASSUME( !result_or_error_.inspected_ );
     }
 
-    fallible_result( fallible_result && __restrict other ) noexcept( std::is_nothrow_move_constructible<result_or_error<Result, Error>>::value )
-        : result_or_error_( std::move( std::move( other ).as_result_or_error() ) )
-    {
-    #ifndef NDEBUG
-        detail::fallible_result_sanitizer::add_instance();
-    #endif // NDEBUG
-        BOOST_ASSUME( other.result_or_error_.inspected_ == true  );
-        BOOST_ASSUME( this->result_or_error_.inspected_ == false );
-    }
-
     fallible_result( fallible_result const & ) = delete;
 
-    BOOST_ATTRIBUTES( BOOST_MINSIZE ) BOOST_FORCEINLINE
+    BOOST_ATTRIBUTES( BOOST_MINSIZE ) PSI_RELEASE_FORCEINLINE
     ~fallible_result() noexcept( false )
     {
     #ifndef NDEBUG
@@ -171,8 +161,21 @@ public:
         BOOST_ASSUME( result_or_error_.inspected_ );
     }
 
-    result_or_error<Result, Error> && as_result_or_error() && noexcept { BOOST_ASSUME( !result_or_error_.inspected_ ); std::move( *this ).ignore_failure(); return std::move( result_or_error_ ); }
-    result_or_error<Result, Error> && operator()        () && noexcept { return std::move( *this ).as_result_or_error(); }
+    // Due to rules regarding NRVO, over which a programmer has no control,
+    // move and copy constructors have to be made private to avoid the case of
+    // someone saving a fallible_result to a local named variable, inspecting it
+    // (using std::move) and then unconditionally returning it to the
+    // caller/further up the chain: the compiler is free to return the inspected
+    // value directly - which can cause incorrect behaviour in the caller, e.g.
+    // an error is not thrown because the returned fallible_result instance has
+    // the inspected_ flag set to true. The current workaround, if you require
+    // that sort of usage, is to return calling propagate (which inhibts NRVO)
+    // (e.g. return my_result.propagate();).
+    // https://en.cppreference.com/w/cpp/language/copy_elision
+    fallible_result propagate() noexcept( std::is_nothrow_move_constructible_v<Result> ) { return std::move( *this ); }
+
+    result_or_error<Result, Error> as_result_or_error() && noexcept { BOOST_ASSUME( !result_or_error_.inspected_ ); std::move( *this ).ignore_failure(); return std::move( result_or_error_ ); }
+    result_or_error<Result, Error> operator()        () && noexcept { return std::move( *this ).as_result_or_error(); }
 
     operator result_or_error<Result, Error> &&() && noexcept { return std::move( *this ).as_result_or_error(); }
     operator Result                         &&() &&          { return std::move( result() ); }
@@ -185,6 +188,16 @@ public:
     void ignore_failure() BOOST_RESTRICTED_THIS && noexcept { result_or_error_.inspected_ = true; }
 
 private:
+    fallible_result( fallible_result && __restrict other ) noexcept( std::is_nothrow_move_constructible<result_or_error<Result, Error>>::value )
+        : result_or_error_( std::move( std::move( other ).as_result_or_error() ) )
+    {
+#   ifndef NDEBUG
+        detail::fallible_result_sanitizer::add_instance();
+#   endif // NDEBUG
+        BOOST_ASSUME( other.result_or_error_.inspected_ == true  );
+        BOOST_ASSUME( this->result_or_error_.inspected_ == false );
+    }
+
     Result && result()
     {
         result_or_error_.throw_if_error();
@@ -193,6 +206,7 @@ private:
         return static_cast<Result &&>( result_or_error_.result_ );
     }
 
+private: // prevent bogus heap creation
     void * operator new     (         std::size_t                         ) = delete;
     void * operator new[]   (         std::size_t                         ) = delete;
     void * operator new     (         std::size_t, std::nothrow_t const & ) = delete;
@@ -238,7 +252,33 @@ public:
         BOOST_ASSUME( !void_or_error_.inspected_ );
     }
 
-    fallible_result( fallible_result && __restrict other ) noexcept( std::is_nothrow_move_constructible<result>::value )
+    BOOST_OPTIMIZE_FOR_SIZE_BEGIN() PSI_RELEASE_FORCEINLINE
+    ~fallible_result() noexcept( false )
+    {
+        BOOST_ASSERT_MSG
+        (
+            detail::fallible_result_sanitizer::singleton.live_void_instance_counter-- == 1 + moved_from_,
+            "More than one fallible_result<void> instance detected"
+        );
+        void_or_error_.throw_if_uninspected_error();
+        BOOST_ASSUME( void_or_error_.inspected_ );
+    }
+    BOOST_OPTIMIZE_FOR_SIZE_END()
+
+    // see the note in the main template
+    fallible_result propagate() noexcept( std::is_nothrow_move_constructible_v<result> ) { return std::move( *this ); }
+
+    result operator()() && noexcept { return std::move( *this ); }
+    operator result  () && noexcept { return std::move( void_or_error_ ); }
+
+    bool succeeded() && noexcept { return void_or_error_.succeeded(); }
+
+    explicit operator bool() && noexcept { return std::move( *this ).succeeded(); }
+
+    void ignore_failure() && noexcept { std::move( *this ).succeeded(); }
+
+private: // see not for propagate()
+    fallible_result( fallible_result && __restrict other ) noexcept( std::is_nothrow_move_constructible_v<result> )
         : void_or_error_( std::move( other ).operator result &&() )
     {
 #   ifndef NDEBUG
@@ -253,30 +293,7 @@ public:
         BOOST_ASSUME( !void_or_error_.inspected_ );
     }
 
-    BOOST_OPTIMIZE_FOR_SIZE_BEGIN() BOOST_FORCEINLINE
-    ~fallible_result() noexcept( false )
-    {
-        BOOST_ASSERT_MSG
-        (
-            detail::fallible_result_sanitizer::singleton.live_void_instance_counter-- == 1 + moved_from_,
-            "More than one fallible_result<void> instance detected"
-        );
-        void_or_error_.throw_if_uninspected_error();
-        BOOST_ASSUME( void_or_error_.inspected_ );
-    }
-    BOOST_OPTIMIZE_FOR_SIZE_END()
-
-    result && operator()() && noexcept { return std::move( *this ); }
-
-    operator result &&() && noexcept { return std::move( void_or_error_ ); }
-
-    bool succeeded() && noexcept { return void_or_error_.succeeded(); }
-
-    explicit operator bool() && noexcept { return std::move( *this ).succeeded(); }
-
-    void ignore_failure() && noexcept { std::move( *this ).succeeded(); }
-
-private:
+private: // prevent bogus heap creation
     void * operator new     (         std::size_t                         ) = delete;
     void * operator new[]   (         std::size_t                         ) = delete;
     void * operator new     (         std::size_t, std::nothrow_t const & ) = delete;
