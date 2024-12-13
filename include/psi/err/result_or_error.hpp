@@ -135,11 +135,11 @@ BOOST_OPTIMIZE_FOR_SIZE_END()
     //operator Result       & ()       noexcept { return result(); }
     //operator Result const & () const noexcept { return result(); }
 
-                      bool inspected() BOOST_RESTRICTED_THIS const noexcept {                    return BOOST_LIKELY( inspected_ ); }
-                      bool succeeded() BOOST_RESTRICTED_THIS const noexcept { inspected_ = true; return BOOST_LIKELY( succeeded_ ); }
+    [[ gnu::pure ]]   bool inspected() BOOST_RESTRICTED_THIS const noexcept {                    return BOOST_LIKELY( inspected_ ); }
+    [[ gnu::pure ]]   bool succeeded() BOOST_RESTRICTED_THIS const noexcept { inspected_ = true; return BOOST_LIKELY( succeeded_ ); }
     explicit operator bool          () BOOST_RESTRICTED_THIS const noexcept {                    return succeeded()               ; }
 
-    Result && assume_succeeded() && noexcept { BOOST_VERIFY( succeeded() ); return std::move( result() ); }
+    Result && assume_succeeded() && noexcept { BOOST_ASSUME( succeeded() ); return std::move( result() ); }
 
 BOOST_OPTIMIZE_FOR_SIZE_BEGIN()
 
@@ -276,11 +276,11 @@ public:
     Result       & result()       noexcept { BOOST_ASSERT_MSG( inspected() &&  *this, "Querying the result of a (possibly) failed operation."   ); return result_; }
     Result const & result() const noexcept { return const_cast<result_or_error &>( *this ).result(); }
 
-                      bool inspected() const noexcept {                    return BOOST_LIKELY(                    inspected_ ); }
-                      bool succeeded() const noexcept { inspected_ = true; return BOOST_LIKELY( static_cast<bool>( result_ )  ); }
+    [[ gnu::pure ]]   bool inspected() const noexcept {                    return BOOST_LIKELY(                    inspected_ ); }
+    [[ gnu::pure ]]   bool succeeded() const noexcept { inspected_ = true; return BOOST_LIKELY( static_cast<bool>( result_ )  ); }
     explicit operator bool          () const noexcept {                    return succeeded()                                  ; }
 
-    Result && assume_succeeded() && noexcept { BOOST_VERIFY( succeeded() ); return std::move( result() ); }
+    Result && assume_succeeded() && noexcept { BOOST_ASSUME( succeeded() ); return std::move( result() ); }
 
     BOOST_OPTIMIZE_FOR_SIZE_BEGIN()
 #ifndef BOOST_NO_EXCEPTIONS //...mrmlj...kill this duplication with the unspecialized template...
@@ -382,11 +382,11 @@ public:
     BOOST_ATTRIBUTES( BOOST_COLD )
     Error const & error() const noexcept { BOOST_ASSERT_MSG( inspected() && !*this, "Querying the error of a (possibly) succeeded operation." ); return error_; }
 
-                      bool inspected() const noexcept {                    return BOOST_LIKELY( inspected_ ); }
-                      bool succeeded() const noexcept { inspected_ = true; return BOOST_LIKELY( succeeded_ ); }
+    [[ gnu::pure ]]   bool inspected() const noexcept {                    return BOOST_LIKELY( inspected_ ); }
+    [[ gnu::pure ]]   bool succeeded() const noexcept { inspected_ = true; return BOOST_LIKELY( succeeded_ ); }
     explicit operator bool          () const noexcept {                    return succeeded()               ; }
 
-    void assume_succeeded() && noexcept { BOOST_VERIFY( succeeded() ); }
+    void assume_succeeded() && noexcept { BOOST_ASSUME( succeeded() ); }
 
 BOOST_OPTIMIZE_FOR_SIZE_BEGIN()
 #ifndef BOOST_NO_EXCEPTIONS //...mrmlj...kill this duplication...
