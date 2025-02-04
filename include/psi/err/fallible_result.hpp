@@ -180,8 +180,8 @@ public:
     operator result_or_error<Result, Error> &&() && noexcept { return std::move( *this ).as_result_or_error(); }
     operator Result                         &&() &&          { return std::move( result() ); }
 
-                                                         Result && operator *  () && { return  result(); }
-    BOOST_ATTRIBUTES( BOOST_RESTRICTED_FUNCTION_RETURN ) Result *  operator -> () && { return &result(); }
+    Result && operator *  () && { return  result(); }
+    Result *  operator -> () && { return &result(); }
 
     explicit operator bool() && noexcept { return static_cast<bool>( result_or_error_ ); }
 
