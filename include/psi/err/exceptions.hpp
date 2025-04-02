@@ -3,7 +3,7 @@
 /// \file exceptios.hpp
 /// -------------------
 ///
-/// Copyright (c) Domagoj Saric 2015 - 2020.
+/// Copyright (c) Domagoj Saric 2015 - 2025.
 ///
 /// Use, modification and distribution is subject to the
 /// Boost Software License, Version 1.0.
@@ -14,8 +14,6 @@
 ///
 ////////////////////////////////////////////////////////////////////////////////
 //------------------------------------------------------------------------------
-#ifndef exceptions_hpp__15955CEE_978C_45BB_BB81_EFF1D165B311
-#define exceptions_hpp__15955CEE_978C_45BB_BB81_EFF1D165B311
 #pragma once
 //------------------------------------------------------------------------------
 #include <boost/config_ex.hpp>
@@ -29,12 +27,8 @@
 #include <Availability.h>
 #include <TargetConditionals.h>
 #endif
-
 //------------------------------------------------------------------------------
-namespace psi
-{
-//------------------------------------------------------------------------------
-namespace err
+namespace psi::err
 {
 //------------------------------------------------------------------------------
 
@@ -86,20 +80,11 @@ std::exception_ptr BOOST_CC_REG make_exception_ptr( Error && error ) { return st
 
 namespace detail
 {
-    inline auto uncaught_exceptions() noexcept
-    {
-    #if ( __cpp_lib_uncaught_exceptions && !defined( __APPLE__ ) ) || ( __cpp_lib_uncaught_exceptions && defined( __APPLE__ ) && defined( TARGET_OS_IPHONE ) && __IPHONE_OS_VERSION_MIN_REQUIRED >= __IPHONE_10_0 )
-        return std::uncaught_exceptions();
-    #else
-        return std::uncaught_exception();
-    #endif // __cpp_lib_uncaught_exceptions
-    }
-
     template <typename Error>
     BOOST_ATTRIBUTES( BOOST_COLD )
     void BOOST_CC_REG conditional_throw( Error && error )
     {
-        if ( BOOST_LIKELY( !uncaught_exceptions() ) )
+        if ( BOOST_LIKELY( !std::uncaught_exceptions() ) )
             make_and_throw_exception( std::move( error ) );
     }
 } // namespace detail
@@ -118,8 +103,5 @@ __if_exists( std::_Xbad_alloc )
 BOOST_OPTIMIZE_FOR_SIZE_END()
 
 //------------------------------------------------------------------------------
-} // namespace err
+} // namespace psi::err
 //------------------------------------------------------------------------------
-} // namespace psi
-//------------------------------------------------------------------------------
-#endif // exceptions_hpp
