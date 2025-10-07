@@ -51,7 +51,8 @@ struct last_win32_error
 {
     using value_type = std::uint32_t;
 
-    static value_type const no_error = 0;
+    static value_type const no_error     = 0;
+    static value_type const invalid_data = ERROR_INVALID_DATA;
 
     BOOST_ATTRIBUTES( BOOST_COLD, BOOST_EXCEPTIONLESS, BOOST_RESTRICTED_FUNCTION_L2, BOOST_WARN_UNUSED_RESULT )
     static value_type get(                        ) noexcept { return   boost::winapi  ::GetLastError(       ); }

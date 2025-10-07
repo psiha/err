@@ -40,7 +40,8 @@ struct last_errno
     using value_type = int;
 #endif // _MSC_VER || __APPLE__
 
-    static value_type const no_error = 0;
+    static value_type const no_error     = 0;
+    static value_type const invalid_data = EINVAL;
 
     BOOST_ATTRIBUTES( BOOST_COLD, BOOST_EXCEPTIONLESS, BOOST_RESTRICTED_FUNCTION_L2, BOOST_WARN_UNUSED_RESULT )
     static value_type BOOST_CC_REG get() { return /*std::*/errno; }
