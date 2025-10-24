@@ -392,7 +392,6 @@ BOOST_OPTIMIZE_FOR_SIZE_BEGIN()
     BOOST_ATTRIBUTES( BOOST_MINSIZE )
     void throw_if_error()
     {
-        BOOST_ASSERT( !std::uncaught_exceptions() );
         if ( BOOST_LIKELY( succeeded() ) )
         {
             BOOST_ASSUME( inspected_ );
