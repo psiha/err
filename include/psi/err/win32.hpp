@@ -3,7 +3,7 @@
 /// \file win32.hpp
 /// ---------------
 ///
-/// Copyright (c) Domagoj Saric 2015 - 2024.
+/// Copyright (c) Domagoj Saric 2015 - 2026.
 ///
 /// Use, modification and distribution is subject to the
 /// Boost Software License, Version 1.0.

@@ -3,7 +3,7 @@
 /// \file errno.hpp
 /// ---------------
 ///
-/// Copyright (c) Domagoj Saric 2015 - 2016.
+/// Copyright (c) Domagoj Saric 2015 - 2026.
 ///
 /// Use, modification and distribution is subject to the
 /// Boost Software License, Version 1.0.
