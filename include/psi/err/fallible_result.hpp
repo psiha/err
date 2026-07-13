@@ -269,7 +269,7 @@ public:
     fallible_result propagate() noexcept( std::is_nothrow_move_constructible_v<result> ) { return std::move( *this ); }
 
     result operator()() && noexcept { return std::move( *this ); }
-    operator result  () && noexcept { return std::move( void_or_error_ ); }
+    operator result &&() && noexcept { return std::move( void_or_error_ ); }
 
     bool succeeded() && noexcept { return void_or_error_.succeeded(); }
 
