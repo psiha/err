@@ -185,6 +185,11 @@ public:
 
     explicit operator bool() && noexcept { return static_cast<bool>( result_or_error_ ); }
 
+    // Mirrors fallible_result<void, Error>::succeeded() below - required by the free
+    // operator==/!= overloads at the bottom of this file, which are written generically over
+    // every Result (void included) and therefore need this member on both specialisations.
+    bool succeeded() && noexcept { return result_or_error_.succeeded(); }
+
     void ignore_failure() BOOST_RESTRICTED_THIS && noexcept { result_or_error_.inspected_ = true; }
 
 private:

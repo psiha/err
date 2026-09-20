@@ -1,0 +1,6 @@
+if ( PSI_ERR_MODULE AND TARGET psi_err_module )
+    add_executable( err_module_smoke_test EXCLUDE_FROM_ALL "${CMAKE_CURRENT_SOURCE_DIR}/module_smoke_test.cpp" )
+    target_link_libraries( err_module_smoke_test PRIVATE psi::err_module )
+    set_target_properties( err_module_smoke_test PROPERTIES CXX_SCAN_FOR_MODULES ON DISABLE_PRECOMPILE_HEADERS ON )
+    add_test( NAME err_module_smoke_test COMMAND err_module_smoke_test )
+endif()
